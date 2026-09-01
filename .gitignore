@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Regenerable artifacts (recreate via scripts/)
+data/srtm/
+**/*.npy
+results/heldout/**/*.tif
+results/heldout/**/*.png
+results/gcp_test/**/*.tif
+results/gcp_test/**/*.png
+results/external/**/*.tif
+results/external/**/*.png
