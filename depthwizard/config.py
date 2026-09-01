@@ -15,6 +15,11 @@ BACKEND = "depthwizard"
 # Locked from Phase 0 de-risk: Small is sufficient, Base buys little.
 MODEL_ID = os.environ.get("DW_MODEL_ID", "depth-anything/Depth-Anything-V2-Small-hf")
 
+# Fine-tuned backbone (GAMUS -> structural nDSM prior). Default production path.
+# Set DW_FINETUNED="off" to fall back to the stock frozen Depth-Anything weights
+# (used by the baseline A/B and to reproduce the original numbers).
+FINETUNED_DIR = Path(os.environ.get("DW_FINETUNED", str(ROOT / "models" / "finetuned")))
+
 # Depth-Anything native resolution & tiling parameters (validated on GAMUS).
 PATCH_SIZE = int(os.environ.get("DW_PATCH", "518"))
 STRIDE = int(os.environ.get("DW_STRIDE", "400"))

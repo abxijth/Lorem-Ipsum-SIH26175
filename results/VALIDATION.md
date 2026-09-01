@@ -1,4 +1,4 @@
-# Calibration Validation — Honest Held-Out Numbers (MVP)
+# Calibration Validation — Honest Held-Out Numbers
 
 Method: fit a single global robust (RANSAC) linear calibration
 `structural_height = slope * depth + intercept` on **GAMUS train** (20 tiles × 3
@@ -6,7 +6,67 @@ cities, 200k pixels). Evaluate on **held-out** tiles (val split for DC/PHL, test
 split for NYC — never seen during fitting). Predicted structural height vs. GT
 AGL nDSM; no SRTM involved (nDSM is height-above-ground).
 
-`slope = 2.5141`, `intercept = 1.59 m`
+## Shipped: fine-tuned backbone (GAMUS) + global calibration
+
+Since the MVP, the Depth-Anything-V2-Small backbone itself has been fine-tuned on
+GAMUS train (target = AGL nDSM, scaled) — see
+`scripts/finetune_gamus.py` — and re-anchored with the same robust linear
+calibration. This is the **default production path** (`models/finetuned` +
+`models/calibration.json`). The MVP numbers below remain reproducible with
+`DW_FINETUNED=off`.
+
+`slope = 0.9684`, `intercept = 0.13 m` (fine-tuned path)
+
+| City | n | RMSE (m) | MAE (m) | Pearson r |
+|---|---|---|---|---|
+| Washington DC | 3 | 5.61 | 4.25 | 0.65 |
+| New York City | 3 | 5.27 | 4.00 | 0.53 |
+| Philadelphia | 3 | **2.23** | **1.26** | **0.66** |
+| **All** | **9** | **4.37** | **3.17** | **0.61** |
+
+Per-tile: best PHL_6151 (RMSE 2.24 m, r 0.71); worst DC_12_17 (RMSE 6.42 m,
+r 0.64).
+
+### A/B vs frozen baseline (same protocol, same 9 tiles)
+
+| Signal | RMSE (m) | MAE (m) | Pearson r |
+|---|---|---|---|
+| frozen DA-V2 + linear calib (MVP) | 5.63 | 4.51 | 0.255 |
+| **fine-tuned DA-V2 + linear calib (shipped)** | **4.37** | **3.17** | **0.611** |
+| relative | **−22%** | −30% | ×2.4 |
+
+The fine-tuned backbone improves **every** held-out tile (worst→best:
+DC 7.6–8.4→4.7–6.4; NYC 6.2+→3.5–6.6; PHL 3.2–3.7→2.0–2.5) and raises DC/NYC
+correlation from ~0.1 to 0.4–0.7. This directly addresses the "backbone trained on
+GAMUS" half of the problem statement — and it measurably helps accuracy.
+
+### Fine-tune design & honest negative results
+
+- `scripts/finetune_gamus.py`: sparse fine-tune (last 2 encoder blocks + neck +
+  regression head), AdamW, mixed precision, patches from fresh GAMUS train tiles
+  (12/city, 20 patches/tile, 6 epochs). Loss converged to ~0.007 (≈0.3 m on
+  training crops).
+- **Critical finding:** the fine-tuned output has good *geometry* but a
+  unit/offset error vs metric height. Raw output on held-out (no recalibration)
+  collapses toward the train-mean (Pearson ~0.004, RMSE ~6.2 m). Anchoring it
+  with the same robust linear calibration the MVP used is what recovers and
+  exceeds baseline accuracy — the calibration step is indispensable, not optional.
+- Naive "regress metric nDSM directly, then stop" **does not work** (RMSE 13.4 m,
+  Pearson 0.61 but badly uncalibrated scale). Treat the fine-tuned output as a
+  better relative-depth source, not as finished metric elevation.
+
+Reproduce: `prime-run python scripts/finetune_gamus.py`,
+`prime-run python scripts/fit_calibration_finetuned.py --per-city 20`,
+then `prime-run python scripts/validate_held_out.py` (defaults now load the
+fine-tuned model; raw values under `results/heldout/validation_summary.json`).
+
+---
+
+# MVP baseline record (frozen DA-V2; reproducible with DW_FINETUNED=off)
+
+The original (pre-fine-tune) numbers, kept as the honest before-state:
+
+`slope = 2.5141`, `intercept = 1.59 m` (frozen)
 
 | City | n | RMSE (m) | MAE (m) | Pearson r |
 |---|---|---|---|---|
@@ -18,7 +78,7 @@ AGL nDSM; no SRTM involved (nDSM is height-above-ground).
 Per-tile: best PHL_6151 (RMSE 3.17 m, r 0.65); worst DC_11_16 / DC_12_17
 (RMSE 7.6–8.4 m, r 0.02).
 
-## Honest reading
+## Honest reading (frozen baseline)
 
 - The global linear head works **where the depth signal exists** (Philadelphia:
   RMSE ≈ 3.2–3.7 m, matching the plan's illustrative urban target) and the
@@ -29,6 +89,10 @@ Per-tile: best PHL_6151 (RMSE 3.17 m, r 0.65); worst DC_11_16 / DC_12_17
 - Conclusion from the decision gate: **global calibration underperforms outside
   high-signal regions** → the Day-2 per-class / segmentation refinement is now
   *justified*, not speculative (the plan's trigger).
+- **Superseded:** the per-class/segmentation direction was later gated (A1,
+  below) and ultimately overtaken by fine-tuning the backbone itself on GAMUS
+  (see "Shipped: fine-tuned backbone" above), which improved the same
+  low-signal cities without any class conditioning.
 - Next steps (Day 2): per-class regression conditioned on GAMUS labels; a light
   segmentation model for inference-time class maps; relax the overall accuracy
   claims and report per-region numbers, per the plan.
@@ -91,11 +155,12 @@ clicking).
 Follow-up hypothesis: replicate the per-class benefit *without* a segmenter by
 making calibration a function of depth alone (low-depth ≈ ground/road → ~0 m;
 high-depth ≈ buildings → tall). Two robust variants fitted on the same 30-tile
-pool and evaluated on the same 9 held-out tiles (`scripts/eval_piecewise.py`):
+pool and evaluated on the same 9 held-out tiles (`scripts/eval_piecewise.py`,
+relative to the frozen-MVP global of the time):
 
 | Method | Overall RMSE | PHL | DC | NYC | v. shipped |
 |---|---|---|---|---|---|
-| shipped global | 5.63 m | 3.45 | 7.21 | 6.22 | — |
+| shipped global (frozen MVP) | 5.63 m | 3.45 | 7.21 | 6.22 | — |
 | piecewise, median anchors | 6.05 m | 2.11 | 8.87 | 7.16 | **−7.4%** |
 | piecewise, per-bin RANSAC anchors | 5.65 m | 2.95 | 7.49 | 6.51 | −0.4% |
 
@@ -109,18 +174,20 @@ height signal, confirming the A1 gate. Models deleted; summaries kept under
 
 ## Landscape generalization (urban / hilly / forest)
 
-The table above is urban-only. `results/VALIDATION_LANDSCAPES.md` adds two
+The held-out table is urban-only. `results/VALIDATION_LANDSCAPES.md` adds two
 external, non-GAMUS cases (hilly Blue Ridge foothills + forested Great Smoky
-Mountains NP, NAIP-derived imagery, USGS 3DEP reference):
+Mountains NP, NAIP-derived imagery, USGS 3DEP reference). Numbers below are the
+**shipped fine-tuned** path; the frozen-MVP equivalents in parentheses:
 
 | Landscape | RMSE (m) | MAE (m) | Pearson | Bias (m) |
 |---|---|---|---|---|
-| urban (GAMUS held-out) | 5.63 | 4.51 | 0.255 | — |
-| hilly (SRTM-baseline-dominated) | 8.05 | 7.52 | 0.991 | +7.50 |
-| forest (canopy not captured) | 11.79 | 9.64 | 0.999 | +8.50 |
+| urban (GAMUS held-out) | 4.37 (5.63) | 3.17 (4.51) | 0.61 (0.26) | — |
+| hilly (SRTM-baseline-dominated) | 3.08 (8.05) | 2.43 (7.52) | 0.99 | +0.72 |
+| forest (canopy partially captured) | 8.11 (11.79) | 6.78 (9.64) | 0.999 | +1.17 |
 
-Takeaway: on non-urban terrain the **30 m SRTM baseline sets the accuracy
-ceiling (~8–12 m)**; the estimator adds no structural height in forest (never
-hallucinates buildings) but also captures no canopy (~0 of ~21 m mean forest
-canopy). Pearson > 0.99 there is carried by terrain relief. These are honest
-limits, not bug-fixes.
+Takeaway: the fine-tuned backbone raises structural-height accuracy in **every**
+landscape (hilly −62%, forest −31%, urban −22%). On non-urban terrain the
+**30 m SRTM baseline** still sets the upper accuracy bound (terrain relief carries
+Pearson > 0.99); in forest the estimator now captures some canopy (vs ~0 for the
+frozen model) but still misses most of the ~21 m mean canopy (predicted ~8 m).
+These are honest limits, not bugs.

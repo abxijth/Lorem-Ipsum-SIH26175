@@ -1,11 +1,14 @@
 {
-  "slope": 2.514149812867625,
-  "intercept": 1.5932063809662407,
+  "slope": 0.9683524176224493,
+  "intercept": 0.12964017527207972,
   "n_pixels": 200000,
   "n_tiles": 60,
   "city_counts": {
     "DC": 20,
     "PHL": 20,
     "NYC": 20
-  }
+  },
+  "class_slopes": {},
+  "class_intercepts": {},
+  "class_counts": {}
 }

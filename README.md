@@ -2,16 +2,17 @@
 
 **Estimate absolute ground elevation (DSM) from a single nadir aerial/satellite image.**
 
-`Image → Depth-Anything-V2 (tiled) → calibrated structural height → + SRTM terrain baseline → GeoTIFF DSM`
+`Image → Depth-Anything-V2 (tiled, GAMUS-fine-tuned) → calibrated structural height → + SRTM terrain baseline → GeoTIFF DSM`
 
 DepthWizard converts relative monocular depth into **metric structural height**
-via a learned calibration head (trained on GAMUS), adds a coarse SRTM terrain
-baseline for absolute elevation, and exports a GIS-valid WGS84 GeoTIFF — with
-honest RMSE/MAE/Pearson numbers against real reference data.
+via a backbone fine-tuned on GAMUS (the problem statement's recommended dataset)
+plus a robust linear calibration head, adds a coarse SRTM terrain baseline for
+absolute elevation, and exports a GIS-valid WGS84 GeoTIFF — with honest
+RMSE/MAE/Pearson numbers against real reference data.
 
 - **Built:** georeferenced and non-georeferenced inputs, tiled depth inference,
-  RANSAC calibration, manual ground-control-point (GCP) refit, SRTM baseline,
-  GeoTIFF export, validation harness.
+  **GAMUS fine-tuned backbone**, RANSAC calibration, manual ground-control-point
+  (GCP) refit, SRTM baseline, GeoTIFF export, validation harness.
 - **Status:** backend MVP **v0.1.0** — validated, reproducible, honest.
 - **Scope:** calibrated for **urban** structural height; hilly/forest behaviour
   is measured and documented (see [Results](#results) and [Limitations](#limitations)).
@@ -43,12 +44,15 @@ python -m venv .venv && source .venv/bin/activate
 pip install --index-url https://download.pytorch.org/whl/cu124 -r requirements.txt
 ```
 
-The depth model (`depth-anything/Depth-Anything-V2-Small-hf`) downloads from the
-HF Hub on first run and is cached. SRTM tiles are fetched on demand from the AWS
+The base depth model (`depth-anything/Depth-Anything-V2-Small-hf`) downloads from
+the HF Hub on first run and is cached. The **GAMUS fine-tuned weights ship in the
+repo** (`models/finetuned/`) and are the default; the model still needs the base
+HF weights for the architecture. SRTM tiles are fetched on demand from the AWS
 Open Data bucket (skadi) — no GDAL CLI or API key required.
 
-**Environment overrides** (`depthwizard/config.py`): `DW_MODEL_ID`, `DW_PATCH`,
-`DW_STRIDE`, `DW_MAX_DIM`, `DW_DEVICE`, `DW_CALIBRATION`.
+**Environment overrides** (`depthwizard/config.py`): `DW_MODEL_ID`, `DW_FINETUNED`
+(`off` to disable fine-tuned weights / reproduce the frozen baseline),
+`DW_PATCH`, `DW_STRIDE`, `DW_MAX_DIM`, `DW_DEVICE`, `DW_CALIBRATION`.
 
 ---
 
@@ -91,7 +95,9 @@ Upload
   └─ PNG/JPG only    ──► relative-only                      ┘
         │
         ▼
-  Tiled Depth-Anything V2 (518px, stride 400)  .......... depth.py
+  Tiled Depth-Anything V2 (518px, stride 400)
+    ├─ default: GAMUS fine-tuned backbone models/finetuned . depth.py
+    └─ DW_FINETUNED=off: stock frozen Depth-Anything
         │
         ▼
   Calibration (RANSAC: structural_height = slope·depth + c)
@@ -109,7 +115,7 @@ Upload
 | Module | Purpose |
 |---|---|
 | `depthwizard/georef.py` | input → RGB + georeference (3 cases above) |
-| `depthwizard/depth.py` | tiled Depth-Anything V2, cosine-feather stitching |
+| `depthwizard/depth.py` | tiled Depth-Anything V2 (fine-tuned default), cosine-feather stitching |
 | `depthwizard/calibrate.py` | global/per-class/GCP/piecewise calibration fit + apply |
 | `depthwizard/srtm.py` | SRTM 30 m terrain baseline via AWS skadi |
 | `depthwizard/dsm.py` | structural + terrain → absolute DSM GeoTIFF |
@@ -122,19 +128,25 @@ Upload
 
 ## Results
 
-All numbers are on data **held out from calibration fitting**; reported as-is,
-no cherry-picking. Fit: global RANSAC on GAMUS train (20 tiles × 3 cities);
-evaluate: 9 held-out tiles `(slope 2.5141, intercept 1.59 m)`.
+All numbers are on data **held out from fitting/training**; reported as-is, no
+cherry-picking. Shipped path: **GAMUS fine-tuned Depth-Anything-V2 backbone**
+(`models/finetuned`) + global RANSAC calibration fit on GAMUS train (20 tiles ×
+3 cities, `slope 0.9684, intercept 0.13 m`); evaluate: 9 held-out tiles. Frozen
+baseline in parentheses.
 
 | Setting | RMSE (m) | MAE (m) | Pearson | Key notes |
 |---|---|---|---|---|
-| Urban held-out (all cities) | **5.63** | **4.51** | **0.26** | PHL strongest (3.45 m / 0.53) |
-|  ↳ DC / NYC separately | 7.21 / 6.22 | 5.36 / 5.09 | 0.10 / 0.13 | weak depth signal |
-| Hilly terrain (Asheville, NC) | **8.05** | **7.52** | 0.991 | dominated by SRTM baseline |
-| Forest (Great Smokies NP) | **11.79** | **9.64** | 0.999 | canopy not captured |
+| Urban held-out (all cities) | **4.37** (5.63) | **3.17** (4.51) | **0.61** (0.26) | improves every tile |
+|  ↳ DC / NYC separately | 5.61 / 5.27 | 4.25 / 4.00 | 0.65 / 0.53 | was 0.10 / 0.13 |
+| Hilly terrain (Asheville, NC) | **3.08** (8.05) | **2.43** (7.52) | 0.99 | SRTM baseline dominates |
+| Forest (Great Smokies NP) | **8.11** (11.79) | **6.78** (9.64) | 0.999 | canopy partially captured |
 | GCP-refit (2 points, PHL) | **1.86** | 1.32 | 0.645 | from 3.17 m baseline |
 
 Decision gates (documented in `results/VALIDATION.md`):
+- **Backbone fine-tuned on GAMUS** (`scripts/finetune_gamus.py`): −22% urban
+  RMSE, −62% hilly, −31% forest vs the frozen baseline. Calibration is still
+  required (a naive metric-outputs-only fine-tune collapses — see the honest
+  A/B in VALIDATION.md).
 - **Segmenter: not trained.** Per-class oracle ceiling probe = **9.6%** RMSE
   gain — below the 10% promote bar → segmentation not worth its cost.
 - **Piecewise calibration: rejected.** Tested two depth-only variants; neither
@@ -144,13 +156,16 @@ Decision gates (documented in `results/VALIDATION.md`):
 
 ## Limitations
 
-1. **Urban scope.** The calibration head is trained on GAMUS (urban LiDAR
-   nDSM). Forest canopy (~21 m mean) is **not** recovered; the model safely
-   returns ~0 structural height instead of hallucinating structures.
+1. **Urban-centric training.** The backbone + calibration head are trained on
+   GAMUS (urban LiDAR nDSM). Forest canopy is now **partially** captured (~8 m
+   of ~21 m mean on GSMNP) but full multi-storey canopy remains out of reach;
+   the model still never hallucinates structures of its own.
 2. **SRTM 30 m ceiling on non-urban terrain.** On hilly/forest ground the
-   terrain baseline — not the depth model — sets accuracy (~8–12 m RMSE).
-3. **City dependence.** Depth signal is strong in PHL, weak in DC/NYC; expect
-   per-region accuracy differences.
+   terrain baseline — not the depth model — still sets the accuracy floor
+   (remaining RMSE 3–8 m; fine-tuning reduced the pre-existing structural
+   error substantially).
+3. **Remaining city dependence.** Depth signal is stronger in PHL than DC/NYC;
+   DC/NYC improved to r≈0.5–0.7 after fine-tuning but remain the weakest pairs.
 4. **Relative-only mode** (no bbox/GCP) produces a normalized visual range, not
    metric elevations.
 
@@ -159,17 +174,22 @@ Decision gates (documented in `results/VALIDATION.md`):
 ## Reproducibility
 
 Run the numbered commands in order (prefix `prime-run` on this laptop; steps
-2–4 download GAMUS tiles on first use).
+download GAMUS tiles on first use. Steps 1–3 reproduce the *shipped* fine-tuned
+path; step 0 trains the backbone itself).
 
 ```bash
+# 0. Fine-tune the depth backbone on GAMUS               -> models/finetuned/  (shipped default)
+python scripts/finetune_gamus.py --train-per-city 12 --epochs 6 --out models/finetuned
+
 # 1. Phase-0 de-risk (tiled inference verdict)          -> results/DE_RISK_REPORT.md
 python scripts/de_risk_test_tiled.py
 
-# 2. Fit the shipped calibration                        -> models/calibration.json
-python scripts/fit_calibration.py
+# 2. Fit the shipped calibration (fine-tuned signal)    -> models/calibration.json
+python scripts/fit_calibration_finetuned.py --per-city 20
 
 # 3. Held-out validation (9 tiles)                      -> results/heldout/
 python scripts/validate_held_out.py --calibration models/calibration.json
+#    (reproduce the frozen MVP baseline: DW_FINETUNED=off + fit_calibration.py)
 
 # 4. Per-class oracle probe (segmentation gate)         -> results/probe/ceiling.json
 python scripts/probe_per_class_ceiling.py
@@ -185,7 +205,7 @@ python scripts/validate_external.py
 
 Documentation:
 - `results/DE_RISK_REPORT.md` — Phase-0 domain-gap finding (tiled inference).
-- `results/VALIDATION.md` — calibration fit, held-out numbers, gates, GCP.
+- `results/VALIDATION.md` — fine-tune + calibration fit, held-out A/B, gates, GCP.
 - `results/VALIDATION_LANDSCAPES.md` — hilly/forest external validation.
 
 ---
