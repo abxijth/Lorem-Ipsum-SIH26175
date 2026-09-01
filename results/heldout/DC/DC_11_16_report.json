@@ -1,0 +1,17 @@
+{
+  "input": "data/heldout/DC_11_16.png",
+  "georeferenced": false,
+  "crs": null,
+  "bbox_wgs84": null,
+  "depth_path": "results/heldout/DC/DC_11_16_depth.npy",
+  "dsm_path": "results/heldout/DC/DC_11_16_dsm.tif",
+  "heatmap_path": "results/heldout/DC/DC_11_16_error.tif",
+  "metrics": {
+    "n": 1048576,
+    "rmse": 7.653675213954625,
+    "mae": 5.62209205224729,
+    "pearson": 0.02158569920492093,
+    "bias": -3.136256813169615
+  },
+  "warnings": []
+}

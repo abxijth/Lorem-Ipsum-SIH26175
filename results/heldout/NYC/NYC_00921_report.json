@@ -1,0 +1,17 @@
+{
+  "input": "data/heldout/NYC_00921.png",
+  "georeferenced": false,
+  "crs": null,
+  "bbox_wgs84": null,
+  "depth_path": "results/heldout/NYC/NYC_00921_depth.npy",
+  "dsm_path": "results/heldout/NYC/NYC_00921_dsm.tif",
+  "heatmap_path": "results/heldout/NYC/NYC_00921_error.tif",
+  "metrics": {
+    "n": 1048576,
+    "rmse": 6.871965083989204,
+    "mae": 6.014785560207449,
+    "pearson": 0.12698248000342718,
+    "bias": -0.15734106587979063
+  },
+  "warnings": []
+}

@@ -1,0 +1,18 @@
+{
+  "input": "data/heldout/PHL_6151.png",
+  "georeferenced": false,
+  "crs": null,
+  "bbox_wgs84": null,
+  "depth_path": "results/gcp_test/refit/PHL_6151_depth.npy",
+  "dsm_path": "results/gcp_test/refit/PHL_6151_dsm.tif",
+  "heatmap_path": "results/gcp_test/refit/PHL_6151_error.tif",
+  "metrics": {
+    "n": 1048576,
+    "rmse": 1.858224312460156,
+    "mae": 1.3208831890474855,
+    "pearson": 0.6451580384961404,
+    "bias": 0.036053336341445974
+  },
+  "warnings": [],
+  "calibration_path": "gcp (2 points)"
+}

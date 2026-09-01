@@ -1,0 +1,12 @@
+{
+  "input": "data/heldout/PHL_6151.png",
+  "georeferenced": false,
+  "crs": null,
+  "bbox_wgs84": null,
+  "depth_path": "results/gcp_test/normal/PHL_6151_depth.npy",
+  "dsm_path": "results/gcp_test/normal/PHL_6151_dsm.tif",
+  "heatmap_path": null,
+  "metrics": {},
+  "warnings": [],
+  "calibration_path": "models/calibration.json"
+}

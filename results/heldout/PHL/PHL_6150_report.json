@@ -1,0 +1,17 @@
+{
+  "input": "data/heldout/PHL_6150.png",
+  "georeferenced": false,
+  "crs": null,
+  "bbox_wgs84": null,
+  "depth_path": "results/heldout/PHL/PHL_6150_depth.npy",
+  "dsm_path": "results/heldout/PHL/PHL_6150_dsm.tif",
+  "heatmap_path": "results/heldout/PHL/PHL_6150_error.tif",
+  "metrics": {
+    "n": 1048576,
+    "rmse": 3.5386699214055146,
+    "mae": 3.269547125760008,
+    "pearson": 0.5142370347890168,
+    "bias": 3.086805255415671
+  },
+  "warnings": []
+}

@@ -1,0 +1,20 @@
+{
+  "input": "data/heldout/PHL_6151.png",
+  "georeferenced": false,
+  "crs": null,
+  "bbox_wgs84": null,
+  "depth_path": "results/gcp_test/single/PHL_6151_depth.npy",
+  "dsm_path": "results/gcp_test/single/PHL_6151_dsm.tif",
+  "heatmap_path": "results/gcp_test/single/PHL_6151_error.tif",
+  "metrics": {
+    "n": 1048576,
+    "rmse": 1.8588845789759945,
+    "mae": 1.3250313235604816,
+    "pearson": 0.6451580394697893,
+    "bias": 0.05273624886674491
+  },
+  "warnings": [
+    "1 GCP -> intercept-only shift (slope kept from base calibration)"
+  ],
+  "calibration_path": "gcp (1 point)"
+}
