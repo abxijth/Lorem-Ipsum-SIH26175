@@ -1,0 +1,23 @@
+{
+  "input": "/home/abxijth/Projects/Lore-Ipsum-SIH26175/data/external/hilly_asheville/input.png",
+  "georeferenced": true,
+  "crs": "EPSG:4326",
+  "bbox_wgs84": [
+    -82.57499999999999,
+    35.49875,
+    -82.55999999999999,
+    35.51375
+  ],
+  "depth_path": "/home/abxijth/Projects/Lore-Ipsum-SIH26175/results/external/hilly_asheville/input_depth.npy",
+  "dsm_path": "/home/abxijth/Projects/Lore-Ipsum-SIH26175/results/external/hilly_asheville/input_dsm.tif",
+  "heatmap_path": "/home/abxijth/Projects/Lore-Ipsum-SIH26175/results/external/hilly_asheville/input_error.tif",
+  "metrics": {
+    "n": 1048576,
+    "rmse": 8.053348552585991,
+    "mae": 7.518672434005317,
+    "pearson": 0.9912157330348569,
+    "bias": 7.496173738818618
+  },
+  "warnings": [],
+  "calibration_path": "/home/abxijth/Projects/Lore-Ipsum-SIH26175/models/calibration.json"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "forest_gsmnp",
+  "landscape": "forest",
+  "bbox": [
+    -83.31,
+    35.59,
+    -83.28,
+    35.620000000000005
+  ],
+  "size": 1024,
+  "reference_source": "USGS 3DEP Elevation ImageServer (bare-earth DEM, multi-res)",
+  "imagery_source": "USGS ImageryOnly basemap (NAIP-derived ortho)",
+  "retrieved_utc": "2026-09-01T16:17:57.783784+00:00",
+  "surface_source": "Copernicus GLO-30 (surface): https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N35_00_W084_00_DEM/Copernicus_DSM_COG_10_N35_00_W084_00_DEM.tif"
+}

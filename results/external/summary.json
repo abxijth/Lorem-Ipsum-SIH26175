@@ -1,0 +1,72 @@
+{
+  "forest_gsmnp": {
+    "name": "forest_gsmnp",
+    "landscape": "forest",
+    "bbox": [
+      -83.31,
+      35.59,
+      -83.28,
+      35.620000000000005
+    ],
+    "metrics": {
+      "n": 1048576,
+      "rmse": 11.786135567962624,
+      "mae": 9.643556445734259,
+      "pearson": 0.9988440527919711,
+      "bias": 8.501494612487239
+    },
+    "calibration": "/home/abxijth/Projects/Lore-Ipsum-SIH26175/models/calibration.json",
+    "warnings": [],
+    "_terrain": {
+      "range_m": [
+        818.8184204101562,
+        1578.797119140625
+      ],
+      "rmse_m": 23.386558532714844,
+      "canopy_mean_m": 20.771930694580078,
+      "canopy_p95_m": 39.033477783203125
+    },
+    "_surface_metrics": {
+      "n": 1048576,
+      "rmse": 14.114939260888677,
+      "mae": 12.381783137272578,
+      "pearson": 0.9993387073538931,
+      "bias": -12.270435968355741
+    }
+  },
+  "hilly_asheville": {
+    "name": "hilly_asheville",
+    "landscape": "hilly",
+    "bbox": [
+      -82.57499999999999,
+      35.49875,
+      -82.55999999999999,
+      35.51375
+    ],
+    "metrics": {
+      "n": 1048576,
+      "rmse": 8.053348552585991,
+      "mae": 7.518672434005317,
+      "pearson": 0.9912157330348569,
+      "bias": 7.496173738818618
+    },
+    "calibration": "/home/abxijth/Projects/Lore-Ipsum-SIH26175/models/calibration.json",
+    "warnings": [],
+    "_terrain": {
+      "range_m": [
+        606.5895385742188,
+        699.18994140625
+      ],
+      "rmse_m": 15.702052116394043,
+      "canopy_mean_m": 14.276865005493164,
+      "canopy_p95_m": 23.131607055664062
+    },
+    "_surface_metrics": {
+      "n": 1048576,
+      "rmse": 9.083335766331697,
+      "mae": 8.18967498728307,
+      "pearson": 0.9758395137216389,
+      "bias": -6.780691602209117
+    }
+  }
+}
