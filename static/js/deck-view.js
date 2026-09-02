@@ -1,5 +1,6 @@
 // Deck.gl map-style terrain view (View B). Uses the vendored deck.gl UMD build
-// (window.deck) with a ScatterplotLayer point cloud + BitmapLayer texture overlay
+// (window.deck) with a ScatterplotLayer point cloud showing only the terrain
+// structure (no image drape), colorized by height over a dark map background.
 // over a dark background. No build step, no runtime CDN, no worker dependency.
 
 // Viridis-ish colormap for elevation coloring
@@ -81,12 +82,6 @@ export class DeckView {
     const pointSize = Math.max(2, Math.min(12, Math.floor(12000 / positions.length)));
 
     const layers = [
-      new window.deck.BitmapLayer({
-        id: 'texture',
-        bounds: [w, s, e, n],
-        image: urls.textureUrl,
-        opacity: 0.8,
-      }),
       new window.deck.ScatterplotLayer({
         id: 'terrain-points',
         data: positions,
