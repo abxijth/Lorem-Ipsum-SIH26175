@@ -86,6 +86,70 @@ python -m depthwizard.cli img.png --gcp "$(cat gcp.txt)"
 
 ---
 
+## Web app & Docker
+
+A FastAPI server wraps the whole pipeline and serves a zero-build Three.js
+frontend (vendored modules, ES import map — no npm/webpack). Load the page,
+upload an image (or pick a bundled sample), and within a minute you get an
+interactive 3D flythrough of the estimated terrain.
+
+### Run (single container)
+
+```bash
+# CPU (default — works on any machine, slower inference)
+docker compose up -d --build
+open http://localhost:8000
+
+# GPU (needs Docker + the NVIDIA Container Toolkit)
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+```
+
+Or without Docker:
+
+```bash
+pip install -r requirements.txt                 # GPU wheels (see Setup)
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+open http://localhost:8000
+```
+
+### What you get in the browser
+
+- **Upload** PNG / JPG / GeoTIFF, an optional WGS84 bounding box, and an
+  optional **reference GeoTIFF** for validation.
+- **Two 3D/map views** (toggle in the toolbar):
+  - **◉ 3D** — an immersive **Three.js** (explicitly named in the SIH26175
+    mandate) first-person **flythrough**: fly / orbit modes, exaggeration
+    slider, RGB / elevation / slope overlays (`error heatmap` overlay +
+    RMSE/MAE/Pearson/bias panel when a reference was uploaded).
+  - **♁ Map** — a **Deck.gl** map-style terrain view (vendored, offline) that
+    drapes the optical texture over the area and renders the estimated DSM as a
+    colorized point cloud you can orbit / inspect as a map. Click a point to
+    read its height.
+- **Double-click to read height** (absolute m + structure, if georeferenced).
+- **Click-to-set GCP calibration** right in the viewer — drop 1–2 points, type
+  known heights, and the DSM is re-calibrated and revalidated live
+  (verified: PHL RMSE 3.17 → 1.86 m with two points).
+- **Download** the full-resolution WGS84 DSM GeoTIFF.
+
+### API
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/process` | multipart `image` (+ `bbox`, `reference`, `gcp` form fields) → `{job_id}` |
+| `GET  /api/jobs/{jid}` | poll: status / progress / metrics / asset URLs |
+| `POST /api/jobs/{jid}/refit` | `{points:[{x,y,h},…]}` → recalibrate + revalidate |
+| `GET  /api/jobs/{jid}/asset/{name}` | web asset (`web/heights.bin`, `web/tex.jpg`, `web/deck_heights.png`, …) |
+| `GET  /api/jobs/{jid}/download` | full-res DSM GeoTIFF |
+| `GET  /api/samples`, `POST /api/samples/{name}/process` | bundled demos (hilly / forest / urban) |
+| `DELETE /api/jobs/{jid}` | cleanup |
+
+The image bakes in the GAMUS fine-tuned backbone (`models/finetuned`), the
+three bundled demo cases, and pre-caches the base Depth-Anything weights.
+`results/` is volume-mounted so job outputs survive restarts. SRTM baseline
+tiles are fetched on demand from AWS at job time (public bucket, no key).
+
+---
+
 ## Architecture & structure
 
 ```
@@ -110,6 +174,11 @@ Upload
         │
         ▼
   GeoTIFF export + validation (RMSE / MAE / Pearson) ....... validate.py
+        │
+        ▼
+  Browser assets (heights/struct/texture/error + Deck.gl) .. export_web.py
+  ┌──────────────── three.js flythrough  +  deck.gl map ────────────────┐
+  └─────────────────────────── static/js/* ─────────────────────────────┘
 ```
 
 | Module | Purpose |
@@ -121,6 +190,7 @@ Upload
 | `depthwizard/dsm.py` | structural + terrain → absolute DSM GeoTIFF |
 | `depthwizard/validate.py` | RMSE/MAE/Pearson + error heatmap |
 | `depthwizard/pipeline.py` | end-to-end orchestrator (`pipeline.run`) |
+| `depthwizard/export_web.py` | browser assets incl. Deck.gl heightmap (`web/deck_heights.png`, `header.json`) |
 | `depthwizard/cli.py` | command-line entrypoint |
 | `scripts/` | validation experiments + data fetchers (see Reproducibility) |
 
@@ -224,7 +294,9 @@ Documentation:
 
 ## Roadmap
 
-- **Next:** FastAPI `/process` endpoint + Three.js terrain flythrough (frontend
-  track) + single-container Docker deploy — these cover the visualization half.
+- **Done:** FastAPI `/process` endpoint + **Three.js** terrain flythrough +
+  **Deck.gl** map view (upload → validate → click-to-recalibrate GCP → dual
+  3D/map viewer) + single-container Docker deploy — the visualization half.
 - **Ideas in the backlog:** improve the DC/NYC depth signal (model/data level);
-  forest canopy calibration with a forest reference; 4th landscape type.
+  forest canopy calibration with a forest reference; 4th landscape type;
+  multi-job queue/uniquing; auth + persistent storage for uploads.

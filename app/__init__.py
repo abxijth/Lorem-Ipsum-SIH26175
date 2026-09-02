@@ -1,0 +1,1 @@
+"""DepthWizard web application package (FastAPI + static frontend)."""

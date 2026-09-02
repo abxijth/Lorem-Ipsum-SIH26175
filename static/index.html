@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DepthWizard — 3D Terrain Flythrough</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="/vendor/three.module.js" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "/vendor/three.module.js",
+    "three/addons/": "/vendor/addons/"
+  }
+}
+</script>
+<script src="/vendor/deck/deck.gl.min.js"></script>
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="brand">
+      <span class="logo">◈</span>
+      <span class="title">DepthWizard</span>
+      <span class="subtitle">optical → 3D terrain → flythrough</span>
+    </div>
+    <div id="job-state" class="hidden"></div>
+    <div class="spacer"></div>
+    <button id="btn-new" class="ghost hidden">New upload</button>
+  </header>
+
+  <!-- Upload screen -->
+  <section id="screen-upload" class="screen active">
+    <div class="card">
+      <h1>Upload imagery</h1>
+      <p class="hint">PNG / JPG / GeoTIFF. Add a bounding box for georeferenced DSM + SRTM terrain,
+      and optionally a reference GeoTIFF to validate height accuracy in 3D.</p>
+
+      <div id="dropzone" class="dropzone">
+        <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.tif,.tiff" />
+        <div class="dz-inner">
+          <div class="dz-icon">⬆</div>
+          <div class="dz-text">Drag &amp; drop your image here, or <span class="link">click to browse</span></div>
+          <div id="dropzone-name" class="dz-file"></div>
+        </div>
+      </div>
+
+      <div class="fields">
+        <label>Bounding box <span class="muted">west south east north (WGS84)</span>
+          <input type="text" id="bbox" placeholder="-82.5750 35.4988 -82.5600 35.5138" />
+        </label>
+        <label>Reference GeoTIFF <span class="muted">optional — for RMSE/MAE/Pearson validation</span>
+          <input type="file" id="ref-input" accept=".tif,.tiff" />
+        </label>
+      </div>
+
+      <div class="row">
+        <button id="btn-process" class="primary" disabled>Generate 3D terrain</button>
+        <div id="upload-error" class="error"></div>
+      </div>
+
+      <div id="samples" class="samples">
+        <span class="muted">or try a sample:</span>
+        <button class="sample" data-sample="hilly">Hilly (Asheville)</button>
+        <button class="sample" data-sample="forest">Forest (GSMNP)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loading screen -->
+  <section id="screen-loading" class="screen">
+    <div class="card narrow">
+      <h1>Generating terrain</h1>
+      <div class="spinner"></div>
+      <div id="progress-label" class="progress-label">queued…</div>
+      <div class="bar"><div id="progress-bar" class="bar-fill"></div></div>
+      <div id="warnings" class="warnings"></div>
+    </div>
+  </section>
+
+  <!-- Viewer screen -->
+  <section id="screen-view" class="screen">
+    <div id="viewport"></div>
+    <div id="viewport-deck" class="hidden"></div>
+
+    <div id="toolbar" class="toolbar">
+      <button id="btn-reset" class="tool" title="Reset view">⟲</button>
+      <button id="btn-fly" class="tool" title="Toggle first-person fly mode">✈</button>
+      <span class="tool-sep"></span>
+      <button id="btn-view-map" class="tool" title="Map (Deck.gl terrain)">♁ Map</button>
+      <button id="btn-view-3d" class="tool active hidden" title="First-person 3D flythrough">◉ 3D</button>
+      <span class="tool-sep"></span>
+      <button id="btn-rgb" class="tool active" title="RGB texture">▧</button>
+      <button id="btn-elev" class="tool" title="Elevation false-color">↥</button>
+      <button id="btn-slope" class="tool" title="Slope (degrees)">⤒</button>
+      <button id="btn-err" class="tool hidden" title="Error heatmap vs reference">⚠</button>
+      <button id="btn-gcp" class="tool" title="GCP calibration: click point, enter known height">＋</button>
+      <span class="tool-sep"></span>
+      <label class="tool-label">exaggeration
+        <input type="range" id="xrange" min="1" max="60" value="8" />
+      </label>
+      <label class="tool-label">detail
+        <select id="quality">
+          <option value="512">512</option>
+          <option value="1024" selected>1024</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="status" class="status-chip hidden"></div>
+
+    <div id="metrics" class="metrics hidden">
+      <h3>Validation vs reference</h3>
+      <div class="m-grid" id="metric-grid"></div>
+    </div>
+
+    <div id="gcp-panel" class="gcp-panel hidden">
+      <h3>Ground control points</h3>
+      <p class="muted">Click on the terrain to add a point, then enter the known real-world height.</p>
+      <div id="gcp-list"></div>
+      <div class="row">
+        <button id="btn-gcp-apply" class="primary" disabled>Re-calibrate</button>
+        <button id="btn-gcp-cancel" class="ghost">Done</button>
+      </div>
+      <div id="gcp-status" class="gcp-status"></div>
+    </div>
+
+    <button id="btn-download" class="download hidden">⬇ full-res DSM (GeoTIFF)</button>
+  </section>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

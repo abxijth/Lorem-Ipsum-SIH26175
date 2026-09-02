@@ -1,0 +1,18 @@
+# GPU override for DepthWizard (merge AFTER docker-compose.yml).
+# Requires the NVIDIA Container Toolkit on the host.
+services:
+  depthwizard:
+    build:
+      args:
+        TORCH_INDEX: cu124
+    image: depthwizard:gpu
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - DW_DEVICE=cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

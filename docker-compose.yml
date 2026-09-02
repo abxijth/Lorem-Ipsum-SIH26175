@@ -1,0 +1,16 @@
+# DepthWizard — CPU inference by default.
+#   docker compose up -d --build            # CPU
+# GPU (NVIDIA Container Toolkit installed):
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+services:
+  depthwizard:
+    build:
+      context: .
+      args:
+        TORCH_INDEX: cpu
+    image: depthwizard:cpu
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./results:/app/results
+    restart: unless-stopped

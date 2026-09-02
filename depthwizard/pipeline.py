@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 
@@ -51,24 +52,46 @@ def run(
     out_dir: Path | str | None = None,
     model_id: str | None = None,
     gcp: str | None = None,
+    progress_cb: Callable[[str], None] | None = None,
+    stage_dir: Path | str | None = None,
+    estimator=None,
 ) -> PipelineResult:
-    """Run the full pipeline on one input image. Returns paths + metrics."""
+    """Run the full pipeline on one input image. Returns paths + metrics.
+
+    `progress_cb(stage)` is called at each coarse stage for a UI progress bar.
+    `stage_dir` (when given) persists the *effective* calibration and terrain
+    baseline so downstream consumers (web exporter, GCP refit) can reproduce
+    the exact DSM without re-running inference.
+    """
     input_path = Path(input_path)
     out = Path(out_dir) if out_dir else (RESULTS_DIR / "output")
     out.mkdir(parents=True, exist_ok=True)
     stem = input_path.stem
+    stage_dir = Path(stage_dir) if stage_dir else None
+    if stage_dir:
+        stage_dir.mkdir(parents=True, exist_ok=True)
+
+    def _report(stage: str) -> None:
+        if progress_cb:
+            progress_cb(stage)
 
     warnings: list[str] = []
 
     # 1. Input
+    _report("georef")
     gr = georef.load(input_path, bbox)
 
     # 2. Relative depth
-    est = DepthEstimator(model_id=model_id) if model_id else DepthEstimator()
-    depth = est.predict(gr.rgb)
+    _report("depth")
+    if estimator is not None:
+        depth = estimator.predict(gr.rgb)
+    else:
+        est = DepthEstimator(model_id=model_id) if model_id else DepthEstimator()
+        depth = est.predict(gr.rgb)
     depth_path = _save_npy(depth, out / f"{stem}_depth.npy")
 
     # 3. Calibration (loaded, default-normalized, or refit from user GCPs)
+    _report("calibrate")
     try:
         calib = load_calibration_any(calibration_path)
         calib_src = str(calibration_path)
@@ -77,6 +100,9 @@ def run(
         calib_src = None
         warnings.append("no calibration found -> normalized relative heights (not metres)")
 
+    if stage_dir:
+        calib.to_json(stage_dir / "base_calib.json")
+
     if gcp:
         points, heights = calibrate.parse_gcp(gcp)
         calib = calibrate.gcp_refit(depth, points, heights, base_calib=calib)
@@ -84,7 +110,11 @@ def run(
         if len(points) < 2:
             warnings.append("1 GCP -> intercept-only shift (slope kept from base calibration)")
 
+    if stage_dir:
+        calib.to_json(stage_dir / "effective_calib.json")
+
     # 4a. SRTM terrain baseline (georeferenced inputs only)
+    _report("terrain")
     terrain = None
     if gr.bbox_wgs84 and gr.crs:
         try:
@@ -92,12 +122,16 @@ def run(
         except Exception as e:
             warnings.append(f"SRTM failed ({e}); structural-height only")
             terrain = None
+        if terrain is not None and stage_dir:
+            np.save(stage_dir / "terrain.npy", terrain)
 
     # 4b. Assemble absolute DSM + export
+    _report("dsm")
     dsm = assemble(depth, calib, terrain)
     dsm_path = write_geotiff(dsm, gr, out / f"{stem}_dsm.tif")
 
     # 5. Validation (if reference provided)
+    _report("validate")
     metrics = {}
     heatmap_path = None
     if reference_path:

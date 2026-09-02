@@ -1,15 +1,9 @@
-# GPU deps (install with: --index-url "https://download.pytorch.org/whl/cu124")
-torch==2.6.0+cu124
-torchvision==0.21.0+cu124
-
 # ML / Transformers
 transformers==5.16.1
 datasets==5.0.1
 huggingface-hub>=0.20
-
 # Geospatial (SRTM fetch is self-contained via AWS skadi; no gdal CLI needed)
 rasterio==1.4.4
-
 # Data / numerics
 numpy==2.4.6
 pandas==3.0.5
@@ -17,11 +11,9 @@ scikit-learn==1.9.0
 scipy>=1.11
 pillow==12.3.0
 h5py>=3.10            # GAMUS tile format
-
 # Viz / misc
 matplotlib==3.11.1
 tqdm==4.70.0
-
 # Web (FastAPI + static frontend)
 fastapi>=0.111
 uvicorn[standard]>=0.30

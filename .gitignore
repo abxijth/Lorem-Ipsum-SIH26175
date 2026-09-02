@@ -12,3 +12,4 @@ results/gcp_test/**/*.tif
 results/gcp_test/**/*.png
 results/external/**/*.tif
 results/external/**/*.png
+results/web/
