@@ -116,6 +116,11 @@ open http://localhost:8000
 
 - **Upload** PNG / JPG / GeoTIFF, an optional WGS84 bounding box, and an
   optional **reference GeoTIFF** for validation.
+- **AGL tiles (above-ground-level, e.g. GAMUS nDSM)** — a GeoTIFF carrying the
+  `GAMUS=AGL` ASCII tag is treated as georeferenced **structural heights only**:
+  it keeps its CRS + GSD (so slope/GCP/Double-click all work) but the SRTM
+  ground baseline is **skipped**, so building heights stay correct instead of
+  being inflated by ground elevation.
 - **Two 3D/map views** (toggle in the toolbar):
   - **◉ 3D** — an immersive **Three.js** (explicitly named in the SIH26175
     mandate) first-person **flythrough**: fly / orbit modes, exaggeration

@@ -182,6 +182,7 @@ def export_web_assets(
         "h_range": _range(dsm, h_valid),
         "struct_range": _range(struct, s_valid),
         "has_struct": bool(s_valid.any()),
+        "agl": bool(getattr(gr, "agl", False)),
         "assets": {
             "heights": "web/heights.bin",
             "struct": "web/struct.bin",

@@ -31,6 +31,9 @@ class Georef:
     bbox_wgs84: tuple | None = None   # (west, south, east, north); None when unknown
     source: str = "png"        # original file suffix
     meta: dict = field(default_factory=dict)
+    agl: bool = False          # AGL (above-ground-level) heights: nDSM is structural
+                               # only. Georeferenced (so GSD/slope work) but the DSM
+                               # must NOT have the SRTM ground baseline added.
 
 
 def _read_image(path: Path) -> np.ndarray:
@@ -57,8 +60,13 @@ def load_georeferenced(path: Path) -> Georef:
             bbox = tuple(transform_bounds(src.crs, "EPSG:4326", *src.bounds))
         else:
             bbox = None
+        tags = src.tags()
     rgb = _read_image(path)
-    return Georef(rgb=rgb, crs=crs, transform=transform, bbox_wgs84=bbox, source=path.suffix.lower(), meta=meta)
+    # Optional AGL (above-ground-level) marker: tile carries structural heights
+    # (e.g. GAMUS nDSM), so skip the SRTM ground baseline downstream.
+    agl = str(tags.get("GAMUS", "")).strip().upper() == "AGL"
+    return Georef(rgb=rgb, crs=crs, transform=transform, bbox_wgs84=bbox,
+                  source=path.suffix.lower(), meta=meta, agl=agl)
 
 
 def load_bbox(path: Path, bbox_str: str) -> Georef:

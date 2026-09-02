@@ -113,10 +113,11 @@ def run(
     if stage_dir:
         calib.to_json(stage_dir / "effective_calib.json")
 
-    # 4a. SRTM terrain baseline (georeferenced inputs only)
+    # 4a. SRTM terrain baseline (georeferenced inputs only; skipped for AGL tiles
+    # whose heights are already structural/above-ground, e.g. GAMUS nDSM).
     _report("terrain")
     terrain = None
-    if gr.bbox_wgs84 and gr.crs:
+    if gr.bbox_wgs84 and gr.crs and not gr.agl:
         try:
             terrain = srtm.terrain_baseline(gr.bbox_wgs84, gr.crs, gr.transform, depth.shape)
         except Exception as e:
@@ -124,6 +125,8 @@ def run(
             terrain = None
         if terrain is not None and stage_dir:
             np.save(stage_dir / "terrain.npy", terrain)
+    elif gr.agl:
+        warnings.append("AGL (above-ground-level) tile -> structural heights only, no SRTM baseline")
 
     # 4b. Assemble absolute DSM + export
     _report("dsm")

@@ -243,7 +243,9 @@ async function enterView(j) {
 
   // status chip with mode info
   $('#status').classList.remove('hidden');
-  const mode = header.mode === 'absolute' ? 'georeferenced · SRTM terrain' : 'relative heights';
+  const mode = header.mode === 'absolute'
+    ? (header.agl ? 'georeferenced · structural (AGL) heights' : 'georeferenced · SRTM terrain + buildings')
+    : 'relative heights';
   const gsd = header.gsd_m ? ` · ~${(header.gsd_m).toFixed(2)} m/px` : '';
   $('#status').textContent = `${mode}${gsd} · double-click to read height`;
 
