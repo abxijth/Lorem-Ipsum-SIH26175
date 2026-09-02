@@ -226,15 +226,15 @@ export class Viewer {
     };
     const cleanup = () => {
       el.removeEventListener('mousedown', onDown);
-      el.removeEventListener('mousemove', onMove);
-      el.removeEventListener('mouseup', onUp);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
       if (this.orbit) this.orbit.enabled = true;
       this._clearRegionBox();
     };
     this._regionCleanup = cleanup;
     el.addEventListener('mousedown', onDown);
-    el.addEventListener('mousemove', onMove);
-    el.addEventListener('mouseup', onUp);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   }
 
   _clearRegionBox() {

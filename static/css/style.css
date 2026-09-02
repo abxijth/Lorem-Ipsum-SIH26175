@@ -206,7 +206,7 @@ canvas { display: block; }
 .region-panel .region-stats b { font-variant-numeric: tabular-nums; }
 .region-panel .known-height { display: flex; flex-direction: column; gap: 4px; }
 .region-panel .known-height input { width: 100%; background: var(--panel-2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 5px 8px; font: inherit; }
-#region-select-box { position: absolute; border: 2px solid var(--accent-hi); background: rgba(59,130,246,.12); pointer-events: none; z-index: 12; display: none; }
+#region-select-box { position: fixed; border: 2px solid var(--accent-hi); background: rgba(59,130,246,.12); pointer-events: none; z-index: 12; display: none; }
 
 .download {
   position: absolute; bottom: 78px; right: 14px;
