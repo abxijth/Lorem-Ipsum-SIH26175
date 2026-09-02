@@ -7,7 +7,8 @@ Endpoints:
   GET  /api/jobs/{jid}/asset/{name}  web asset (heights.bin, tex.jpg, header.json, ...)
   GET  /api/jobs/{jid}/download      original full-resolution DSM GeoTIFF
   DELETE /api/jobs/{jid}             cleanup
-  GET  /static/...                   Three.js frontend (served at /)
+  GET  /                             landing page
+  GET  /app                          Three.js terrain viewer frontend
 
 Runs standalone: uvicorn app.main:app --host 0.0.0.0 --port 8000
 """
@@ -209,5 +210,17 @@ async def samples_process(name: str):
     return {"job_id": job.id, "status": job.status, "label": spec["label"]}
 
 
-# Static frontend mount — last so /api/* resolves first.
-app.mount("/", StaticFiles(directory=_STATIC, html=True), name="static")
+# Explicit page routes — declared BEFORE the static mount so they are not shadowed.
+@app.get("/", response_class=None)
+async def landing_page():
+    return FileResponse(_STATIC / "landing.html")
+
+
+@app.get("/app", response_class=None)
+async def app_page():
+    return FileResponse(_STATIC / "app.html")
+
+
+# Static asset mount — serves /css/*, /js/*, /vendor/*, etc.
+# Must come AFTER explicit page routes and /api/* so it does not shadow them.
+app.mount("/", StaticFiles(directory=_STATIC), name="static")

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DepthWizard — 3D Terrain Elevation from a Single Image</title>
+  <meta name="description" content="Estimate absolute ground elevation from a single aerial or satellite image. No LiDAR, no stereo pairs. Fine-tuned depth model, RANSAC calibration, GIS-ready GeoTIFF output." />
+  <meta name="theme-color" content="#0A0A0A" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="DepthWizard — 3D Terrain Elevation from a Single Image" />
+  <meta property="og:description" content="Estimate metric ground elevation from one aerial/satellite image. No LiDAR, no stereo pairs — fine-tuned depth, RANSAC calibration, GIS-ready GeoTIFF." />
+  <meta property="og:image" content="/media/showcase-3d.webp" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" />
+
+  <link rel="stylesheet" href="/css/landing.css" />
+  <link rel="icon" href="/media/favicon.svg" type="image/svg+xml" />
+</head>
+<body>
+
+  <div class="scroll-progress" role="presentation"></div>
+
+  <!-- ============================================================
+       NAVBAR
+       ============================================================ -->
+  <nav class="navbar" aria-label="Primary">
+    <div class="container">
+      <a href="/" class="nav-brand" aria-label="DepthWizard home">
+        <svg class="icon-logo" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2 L20 8 V16 L12 22 L4 16 V8 Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M7.5 9.5 L12 7 L16.5 9.5 V14.5 L12 17 L7.5 14.5 Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+        <span class="name">DepthWizard</span>
+      </a>
+      <div class="nav-spacer"></div>
+      <div class="nav-links">
+        <a href="#workflow">How it works</a>
+        <a href="https://github.com/anuaykrishnamenon/Lore-Ipsum-SIH26175" target="_blank" rel="noopener">GitHub</a>
+        <a href="/app" class="nav-cta">Try it <svg class="icon-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+      <button class="nav-burger" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- mobile menu -->
+  <div id="mobile-menu" class="mobile-menu" aria-hidden="true">
+    <a href="#workflow">How it works</a>
+    <a href="https://github.com/anuaykrishnamenon/Lore-Ipsum-SIH26175" target="_blank" rel="noopener">GitHub</a>
+    <a href="/app" class="mobile-cta">Try it <svg class="icon-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+  </div>
+
+
+  <!-- ============================================================
+       HERO
+       ============================================================ -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-eyebrow anim"><span class="hero-eyebrow-dot"></span>SIH26175</div>
+        <h1 class="hero-headline anim anim-1">3D terrain elevation<br/>from a single image</h1>
+        <p class="hero-body anim anim-2">
+          DepthWizard estimates absolute ground elevation from a single aerial or satellite image.
+          No LiDAR, no stereo pairs — just a fine-tuned depth model, RANSAC calibration, and SRTM terrain baselines.
+        </p>
+
+        <div class="hero-actions anim anim-3">
+          <a href="/app" class="btn-primary">Open the app <svg class="icon-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          <a href="https://github.com/anuaykrishnamenon/Lore-Ipsum-SIH26175" target="_blank" rel="noopener" class="btn-secondary">View source <svg class="icon-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 4.5h6.5V11M11.5 4.5L4 12" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+
+        <div class="hero-stats anim anim-3">
+          <div class="hero-stat"><b class="stat-num">3.08m</b><span class="stat-label">hilly RMSE</span></div>
+          <div class="hero-stat"><b class="stat-num">4.37m</b><span class="stat-label">urban RMSE</span></div>
+          <div class="hero-stat"><b class="stat-num">1.86m</b><span class="stat-label">with 2 GCPs</span></div>
+          <div class="hero-stat"><b class="stat-num">1</b><span class="stat-label">input image</span></div>
+        </div>
+      </div>
+
+      <div class="hero-visual anim anim-2">
+        <div class="pipeline-node">
+          <div class="node-step">01 / INPUT</div>
+          <div class="node-title">Aerial or satellite image</div>
+          <div class="node-desc">PNG · JPG · GeoTIFF</div>
+        </div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-node">
+          <div class="node-step">02 / DEPTH</div>
+          <div class="node-title">Monocular depth estimation</div>
+          <div class="node-desc">Depth-Anything-V2 · tiled 518px · cosine feathering</div>
+          <div class="node-module">depth.py</div>
+        </div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-node">
+          <div class="node-step">03 / CALIBRATE</div>
+          <div class="node-title">Metric structural height</div>
+          <div class="node-desc">RANSAC linear fit · optional GCP refit</div>
+          <div class="node-module">calibrate.py</div>
+        </div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-node">
+          <div class="node-step">04 / TERRAIN</div>
+          <div class="node-title">SRTM 30m baseline</div>
+          <div class="node-desc">AWS Open Data · stitched · resampled</div>
+          <div class="node-module">srtm.py</div>
+        </div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-node highlight">
+          <div class="node-step">05 / OUTPUT</div>
+          <div class="node-title">Absolute DSM</div>
+          <div class="node-desc">WGS84 GeoTIFF · Float32 · deflated</div>
+          <div class="node-module">dsm.py</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============================================================
+       TRUST STRIP
+       ============================================================ -->
+  <div class="trust-strip reveal">
+    <div class="container">
+      <div class="trust-items">
+        <span class="trust-item">Smart India Hackathon 2026</span>
+        <span class="trust-dot">·</span>
+        <span class="trust-item">Open Source</span>
+        <span class="trust-dot">·</span>
+        <span class="trust-item">PyTorch</span>
+        <span class="trust-dot">·</span>
+        <span class="trust-item">FastAPI</span>
+        <span class="trust-dot">·</span>
+        <span class="trust-item">Three.js</span>
+        <span class="trust-dot">·</span>
+        <span class="trust-item">Deck.gl</span>
+        <span class="trust-dot">·</span>
+        <span class="trust-item">Docker</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================
+       PROBLEM / SOLUTION
+       ============================================================ -->
+  <section class="problem-solution section">
+    <div class="container">
+      <div class="ps-block reveal">
+        <div class="ps-label">
+          <span class="num">01</span>
+          <span class="tag">/ PROBLEM</span>
+        </div>
+        <p class="ps-statement">
+          Creating Digital Surface Models traditionally requires LiDAR surveys, stereo satellite pairs, or drone photogrammetry — expensive, multi-pass operations that demand specialized hardware and significant compute.
+        </p>
+      </div>
+
+      <div class="ps-divider"></div>
+
+      <div class="ps-block reveal reveal-delay-1">
+        <div class="ps-label">
+          <span class="num">02</span>
+          <span class="tag">/ APPROACH</span>
+        </div>
+        <p class="ps-statement">
+          DepthWizard estimates metric elevation from a single optical image. A fine-tuned monocular depth model, calibrated with RANSAC regression and optionally refined with ground control points, produces GIS-ready GeoTIFF output — with honest validation numbers.
+        </p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============================================================
+       CORE WORKFLOW
+       ============================================================ -->
+  <section id="workflow" class="workflow section">
+    <div class="container">
+      <div class="workflow-header reveal">
+        <div class="workflow-label">Pipeline</div>
+        <h2 class="workflow-title">From image to elevation</h2>
+      </div>
+
+      <div class="workflow-steps">
+        <div class="workflow-step reveal">
+          <div class="step-num">01</div>
+          <svg class="step-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h4v12H3zM9 4h4v16H9zM15 7h4v10h-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <div class="step-title">Input</div>
+          <div class="step-desc">Upload PNG, JPG, or GeoTIFF. Optional bounding box for georeferencing.</div>
+          <div class="step-module">georef.py</div>
+        </div>
+
+        <div class="workflow-step reveal reveal-delay-1">
+          <div class="step-num">02</div>
+          <svg class="step-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+          <div class="step-title">Depth</div>
+          <div class="step-desc">Tiled inference at 518px patches with cosine-feathered stitching.</div>
+          <div class="step-module">depth.py</div>
+        </div>
+
+        <div class="workflow-step reveal reveal-delay-2">
+          <div class="step-num">03</div>
+          <svg class="step-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17 L9 9 l3 4 4-7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5" cy="19" r="1.4" fill="currentColor"/><circle cx="14" cy="6" r="1.4" fill="currentColor"/></svg>
+          <div class="step-title">Calibrate</div>
+          <div class="step-desc">RANSAC robust linear fit. Optional GCP refinement with 1–2 points.</div>
+          <div class="step-module">calibrate.py</div>
+        </div>
+
+        <div class="workflow-step reveal reveal-delay-3">
+          <div class="step-num">04</div>
+          <svg class="step-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17 L8 8 l3 5 3-3 5 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="step-title">Terrain</div>
+          <div class="step-desc">SRTM 30m baseline fetched from AWS, stitched, resampled to image grid.</div>
+          <div class="step-module">srtm.py</div>
+        </div>
+
+        <div class="workflow-step step-output reveal reveal-delay-4">
+          <div class="step-num">05</div>
+          <svg class="step-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14M12 17 l-4-4 M12 17 l4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 21h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="step-title">Output</div>
+          <div class="step-desc">WGS84 GeoTIFF DSM. Interactive 3D flythrough. Full validation metrics.</div>
+          <div class="step-module">dsm.py · export_web.py</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============================================================
+       PRODUCT SHOWCASE
+       ============================================================ -->
+  <section class="showcase section">
+    <div class="container">
+      <div class="showcase-header reveal">
+        <div class="showcase-label">Visualization</div>
+        <h2 class="showcase-title">Three ways to explore the terrain</h2>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="showcase-card reveal">
+          <figure class="showcase-visual">
+            <span class="showcase-visual-label">3D FLYTHROUGH</span>
+            <img src="/media/showcase-3d.webp" alt="Three.js first-person 3D flythrough of a Digital Surface Model" loading="lazy" width="1200" height="900" />
+          </figure>
+          <div class="showcase-caption">
+            <div class="showcase-caption-title">First-person flythrough</div>
+            <div class="showcase-caption-desc">Orbit, fly, and measure. Three.js-powered terrain navigation with adjustable height exaggeration up to 60×</div>
+          </div>
+        </div>
+
+        <div class="showcase-card reveal reveal-delay-1">
+          <figure class="showcase-visual">
+            <span class="showcase-visual-label">MAP VIEW</span>
+            <img src="/media/showcase-deck.webp" alt="Deck.gl map-style colorized elevation point cloud" loading="lazy" width="1200" height="900" />
+          </figure>
+          <div class="showcase-caption">
+            <div class="showcase-caption-title">Map-style structure view</div>
+            <div class="showcase-caption-desc">Deck.gl colorized terrain point cloud. Every pixel carries metric elevation you can inspect.</div>
+          </div>
+        </div>
+
+        <div class="showcase-card reveal reveal-delay-2">
+          <figure class="showcase-visual">
+            <span class="showcase-visual-label">REGION ANALYSIS</span>
+            <img src="/media/showcase-region.webp" alt="Region statistics selection box over a building rooftop" loading="lazy" width="1200" height="900" />
+          </figure>
+          <div class="showcase-caption">
+            <div class="showcase-caption-title">Region analysis &amp; GCP calibration</div>
+            <div class="showcase-caption-desc">Drag-select any area for robust per-pixel statistics. Click to set ground control points and recalibrate live.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============================================================
+       TECHNICAL
+       ============================================================ -->
+  <section class="technical section">
+    <div class="container">
+      <div class="tech-header reveal">
+        <div class="tech-label">Under the hood</div>
+        <h2 class="tech-title">Technical breakdown</h2>
+      </div>
+
+      <div class="tech-cards">
+        <!-- Model Card -->
+        <div class="tech-card reveal">
+          <div class="tech-card-header">Model</div>
+          <div class="tech-row">
+            <span class="tech-row-label">Backbone</span>
+            <span class="tech-row-value">Depth-Anything-V2-Small</span>
+          </div>
+          <div class="tech-row">
+            <span class="tech-row-label">Fine-tune</span>
+            <span class="tech-row-value">GAMUS urban LiDAR nDSM · 6 epochs · 36 tiles</span>
+          </div>
+          <div class="tech-row">
+            <span class="tech-row-label">Strategy</span>
+            <span class="tech-row-value">Sparse — last 2 encoder layers + neck + head</span>
+          </div>
+          <div class="tech-row">
+            <span class="tech-row-label">Calibration</span>
+            <span class="tech-row-value"><span class="accent">slope 0.9684</span> · <span class="accent">intercept 0.13 m</span> · RANSAC</span>
+          </div>
+          <div class="tech-row">
+            <span class="tech-row-label">Training data</span>
+            <span class="tech-row-value">200,000 pixels · 60 tiles · DC · PHL · NYC</span>
+          </div>
+        </div>
+
+        <!-- Stack Card -->
+        <div class="tech-card reveal reveal-delay-1">
+          <div class="tech-card-header">Stack</div>
+          <div class="tech-row">
+            <span class="tech-row-label">Backend</span>
+            <span class="tech-row-value">FastAPI · PyTorch 2.6 · rasterio · scikit-learn</span>
+          </div>
+          <div class="tech-row">
+            <span class="tech-row-label">Frontend</span>
+            <span class="tech-row-value">Three.js · Deck.gl · vanilla JS · zero build</span>
+          </div>
+          <div class="tech-row">
+            <span class="tech-row-label">Terrain</span>
+            <span class="tech-row-value">SRTM 30m via AWS Open Data (no API key)</span>
+          </div>
+          <div class="tech-row">
+            <span class="tech-row-label">Deploy</span>
+            <span class="tech-row-value">Single Docker container · CPU / GPU · NVIDIA CUDA 12.4</span>
+          </div>
+        </div>
+
+        <!-- Validation Card -->
+        <div class="tech-card reveal reveal-delay-2">
+          <div class="tech-card-header">Validation — held-out data, no cherry-picking</div>
+          <div class="tech-metrics-grid">
+            <div class="tech-metric">
+              <div class="tech-metric-value">4.37m</div>
+              <div class="tech-metric-label">Urban RMSE</div>
+            </div>
+            <div class="tech-metric">
+              <div class="tech-metric-value">1.86m</div>
+              <div class="tech-metric-label">With 2 GCPs</div>
+            </div>
+            <div class="tech-metric">
+              <div class="tech-metric-value">3.08m</div>
+              <div class="tech-metric-label">Hilly RMSE</div>
+            </div>
+            <div class="tech-metric">
+              <div class="tech-metric-value">r=0.61</div>
+              <div class="tech-metric-label">Pearson urban</div>
+            </div>
+          </div>
+          <div class="tech-row" style="margin-top: 16px;">
+            <span class="tech-row-label">Cities</span>
+            <span class="tech-row-value">Washington DC · Philadelphia · New York City</span>
+          </div>
+          <div class="tech-row">
+            <span class="tech-row-label">Landscapes</span>
+            <span class="tech-row-value">Asheville NC (hilly) · Great Smoky Mountains NP (forest)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============================================================
+       FINAL CTA
+       ============================================================ -->
+  <section class="final-cta section">
+    <div class="container">
+      <h2 class="final-cta-statement reveal">Explore the project.</h2>
+      <div class="final-cta-actions reveal reveal-delay-1">
+        <a href="/app" class="btn-primary">Open the app <svg class="icon-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="https://github.com/anuaykrishnamenon/Lore-Ipsum-SIH26175" target="_blank" rel="noopener" class="btn-outline">View on GitHub <svg class="icon-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 4.5h6.5V11M11.5 4.5L4 12" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-left">
+        <div class="footer-brand">
+          <svg class="icon-logo" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 2 L20 8 V16 L12 22 L4 16 V8 Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M7.5 9.5 L12 7 L16.5 9.5 V14.5 L12 17 L7.5 14.5 Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+          <span class="name">DepthWizard</span>
+        </div>
+        <span class="footer-sub">SIH26175 · Smart India Hackathon 2026</span>
+      </div>
+      <div class="footer-links">
+        <a href="/app">App</a>
+        <span class="sep">·</span>
+        <a href="https://github.com/anuaykrishnamenon/Lore-Ipsum-SIH26175" target="_blank" rel="noopener">GitHub</a>
+        <span class="sep">·</span>
+        <a href="https://github.com/anuaykrishnamenon/Lore-Ipsum-SIH26175#readme" target="_blank" rel="noopener">Docs</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/landing.js"></script>
+</body>
+</html>
