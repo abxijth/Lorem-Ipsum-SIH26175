@@ -129,6 +129,11 @@ open http://localhost:8000
 - **Click-to-set GCP calibration** right in the viewer — drop 1–2 points, type
   known heights, and the DSM is re-calibrated and revalidated live
   (verified: PHL RMSE 3.17 → 1.86 m with two points).
+- **Region statistics** — hit **▭ Region**, drag a rectangle (e.g. over a
+  roof/hill) and the app computes robust per-pixel statistics (median, mean, σ,
+  min/max, sample count, structural median) from a full-resolution region grid.
+  A **Use region as GCP** button feeds the region median into the existing
+  `/refit` endpoint to recalibrate the whole DSM from that region.
 - **Download** the full-resolution WGS84 DSM GeoTIFF.
 
 ### API
@@ -137,7 +142,7 @@ open http://localhost:8000
 |---|---|
 | `POST /api/process` | multipart `image` (+ `bbox`, `reference`, `gcp` form fields) → `{job_id}` |
 | `GET  /api/jobs/{jid}` | poll: status / progress / metrics / asset URLs |
-| `POST /api/jobs/{jid}/refit` | `{points:[{x,y,h},…]}` → recalibrate + revalidate |
+| `POST /api/jobs/{jid}/refit` | `{points:[{x,y,h},…]}` → recalibrate + revalidate (also used by Region-as-GCP) |
 | `GET  /api/jobs/{jid}/asset/{name}` | web asset (`web/heights.bin`, `web/tex.jpg`, `web/deck_heights.png`, …) |
 | `GET  /api/jobs/{jid}/download` | full-res DSM GeoTIFF |
 | `GET  /api/samples`, `POST /api/samples/{name}/process` | bundled demos (hilly / forest / urban) |
@@ -190,7 +195,7 @@ Upload
 | `depthwizard/dsm.py` | structural + terrain → absolute DSM GeoTIFF |
 | `depthwizard/validate.py` | RMSE/MAE/Pearson + error heatmap |
 | `depthwizard/pipeline.py` | end-to-end orchestrator (`pipeline.run`) |
-| `depthwizard/export_web.py` | browser assets incl. Deck.gl heightmap (`web/deck_heights.png`, `header.json`) |
+| `depthwizard/export_web.py` | browser assets incl. Deck.gl heightmap (`web/deck_heights.png`, `header.json`) + region grid (`web/region_heights.bin`, `header.region`) |
 | `depthwizard/cli.py` | command-line entrypoint |
 | `scripts/` | validation experiments + data fetchers (see Reproducibility) |
 

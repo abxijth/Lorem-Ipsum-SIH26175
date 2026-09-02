@@ -96,6 +96,16 @@ def main() -> int:
               f"decoder={deck.get('elevationDecoder')}")
         check("deck bounds present", len(deck.get("bounds") or []) == 4, f"bounds={deck.get('bounds')}")
 
+    # Region-select grid assets (View region tool)
+    region = status["header"].get("region")
+    check("region header present", region is not None)
+    if region:
+        resp = client.get(f"/api/jobs/{jid}/asset/{region['heights']}")
+        ok = resp.status_code == 200 and len(resp.content) > 0
+        check("region heights serves", ok, f"status {resp.status_code}")
+        rw_, rh_ = region["grid"]
+        check("region grid sane", rw_ >= 1 and rh_ >= 1, f"grid={region['grid']}")
+
     resp = client.get(f"/api/jobs/{jid}/download")
     check("dsm download serves", resp.status_code == 200 and resp.content[:2] == b"II")
 

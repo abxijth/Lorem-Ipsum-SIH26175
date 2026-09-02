@@ -27,6 +27,11 @@ export class Viewer {
     this.exag = 6;
     this.gcpMode = false;
     this.gcpMarks = [];
+    this.regionMode = false;
+    this._regionHeights = null;
+    this._regionStruct = null;
+    this.regionGridW = 0;
+    this.regionGridH = 0;
     this._rgbTex = null;
     this._errTex = null;
     this._overlayTex = null;
@@ -36,10 +41,18 @@ export class Viewer {
   }
 
   // ---------------------------------------------------------------- lifecycle
-  init(header, heights, struct, texUrl, errUrl) {
+  init(header, heights, struct, texUrl, errUrl, region) {
     this.header = header;
     this.heights = heights;
     this.struct = struct;
+    if (region) {
+      this._regionHeights = region.heights;
+      this._regionStruct = region.struct || null;
+      this.regionGridW = region.gridW;
+      this.regionGridH = region.gridH;
+      this.regionOrigW = region.origW;
+      this.regionOrigH = region.origH;
+    }
 
     const { grid_w: gw, grid_h: gh } = header;
 
@@ -87,6 +100,7 @@ export class Viewer {
   dispose() {
     cancelAnimationFrame(this._anim);
     window.removeEventListener('resize', this._onResize);
+    if (this._regionCleanup) { try { this._regionCleanup(); } catch (e) { /* noop */ } }
     if (this.mesh) this.mesh.geometry.dispose();
     if (this.renderer) this.renderer.dispose();
     this.container.innerHTML = '';
@@ -160,6 +174,157 @@ export class Viewer {
   clearGcpMarks() {
     for (const m of this.gcpMarks) this.scene.remove(m);
     this.gcpMarks = [];
+  }
+
+  // ---------------------------------------------------------------- region select
+  /** Toggle region-select mode. Region grid must be present to enable. */
+  setRegionMode(on) {
+    this.regionMode = on;
+    this.renderer.domElement.style.cursor = on ? 'crosshair' : '';
+    if (on) this._beginRegionDrag();
+    else this._clearRegionBox();
+  }
+
+  _beginRegionDrag() {
+    const el = this.renderer.domElement;
+    let box = document.getElementById('region-select-box');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'region-select-box';
+      this.container.appendChild(box);
+    }
+    let start = null;
+
+    const onDown = (e) => {
+      if (e.button !== 0) return;
+      if (this.orbit) this.orbit.enabled = false;
+      start = { x: e.clientX, y: e.clientY };
+      box.style.display = 'block';
+      box.style.left = `${e.clientX}px`;
+      box.style.top = `${e.clientY}px`;
+      box.style.width = '0px';
+      box.style.height = '0px';
+      box.dataset.active = '1';
+    };
+    const onMove = (e) => {
+      if (!start || box.dataset.active !== '1') return;
+      const x = Math.min(e.clientX, start.x), y = Math.min(e.clientY, start.y);
+      box.style.left = `${x}px`;
+      box.style.top = `${y}px`;
+      box.style.width = `${Math.abs(e.clientX - start.x)}px`;
+      box.style.height = `${Math.abs(e.clientY - start.y)}px`;
+    };
+    const onUp = (e) => {
+      if (!start || box.dataset.active !== '1') return;
+      box.dataset.active = '0';
+      const wdt = Math.abs(e.clientX - start.x), hgt = Math.abs(e.clientY - start.y);
+      if (wdt < 5 || hgt < 5) { start = null; box.style.display = 'none'; return; }
+      const x0 = Math.min(start.x, e.clientX), y0 = Math.min(start.y, e.clientY);
+      start = null;
+      this._regionFromScreenRect(x0, y0, x0 + wdt, y0 + hgt);
+      box.style.display = 'none';
+    };
+    const cleanup = () => {
+      el.removeEventListener('mousedown', onDown);
+      el.removeEventListener('mousemove', onMove);
+      el.removeEventListener('mouseup', onUp);
+      if (this.orbit) this.orbit.enabled = true;
+      this._clearRegionBox();
+    };
+    this._regionCleanup = cleanup;
+    el.addEventListener('mousedown', onDown);
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseup', onUp);
+  }
+
+  _clearRegionBox() {
+    const box = document.getElementById('region-select-box');
+    if (box) box.style.display = 'none';
+  }
+
+  /** Screen rect -> raycast 4 corners -> region grid rect -> stats. */
+  _regionFromScreenRect(x0, y0, x1, y1) {
+    const corners = [
+      this._rayToGrid(x0, y0), this._rayToGrid(x1, y0),
+      this._rayToGrid(x1, y1), this._rayToGrid(x0, y1),
+    ];
+    const pts = corners.filter(Boolean);
+    if (pts.length < 2) return;
+
+    let minC = Infinity, maxC = -Infinity, minR = Infinity, maxR = -Infinity;
+    for (const p of pts) {
+      if (p.col < minC) minC = p.col;
+      if (p.col > maxC) maxC = p.col;
+      if (p.row < minR) minR = p.row;
+      if (p.row > maxR) maxR = p.row;
+    }
+    const stats = this._regionStatsFor(minC, minR, maxC, maxR);
+    if (stats && this.hooks.onRegion) this.hooks.onRegion(stats);
+  }
+
+  _rayToGrid(clientX, clientY) {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(
+      ((clientX - r.left) / r.width) * 2 - 1,
+      -((clientY - r.top) / r.height) * 2 + 1,
+    );
+    this._ray.setFromCamera(ndc, this.camera);
+    const hits = this._ray.intersectObject(this.mesh);
+    if (!hits.length) return null;
+    const pt = hits[0].point;
+    const { grid_w: gw, grid_h: gh } = this.header;
+    return {
+      col: Math.min(gw - 1, Math.max(0, Math.round(pt.x))),
+      row: Math.min(gh - 1, Math.max(0, Math.round(pt.y))),
+    };
+  }
+
+  /** Summarize heights in grid rect [c0..c1, r0..r1] using the region grid. */
+  _regionStatsFor(c0, r0, c1, r1) {
+    if (!this._regionHeights) return null;
+    const gw = this.header.grid_w, gh = this.header.grid_h;
+    const rgw = this.regionGridW || gw, rgh = this.regionGridH || gh;
+    const scX = (rgw - 1) / (gw - 1 || 1);
+    const scY = (rgh - 1) / (gh - 1 || 1);
+
+    const vals = [];
+    const structs = [];
+    for (let row = Math.max(0, r0); row <= Math.min(gh - 1, r1); row++) {
+      for (let col = Math.max(0, c0); col <= Math.min(gw - 1, c1); col++) {
+        const gi = Math.round(row * scY) * rgw + Math.round(col * scX);
+        const v = this._regionHeights[gi];
+        if (Number.isFinite(v)) vals.push(v);
+        if (this._regionStruct && Number.isFinite(this._regionStruct[gi])) structs.push(this._regionStruct[gi]);
+      }
+    }
+    if (!vals.length) return null;
+
+    vals.sort((a, b) => a - b);
+    const median = vals.length % 2 ? vals[(vals.length - 1) >> 1]
+      : 0.5 * (vals[vals.length / 2 - 1] + vals[vals.length / 2]);
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const variance = vals.reduce((a, b) => a + (b - mean) * (b - mean), 0) / vals.length;
+
+    // region centre in original-image pixel coords (for a GCP point)
+    const cc = 0.5 * (Math.max(c0, 0) + Math.min(c1, gw - 1));
+    const rc = 0.5 * (Math.max(r0, 0) + Math.min(r1, gh - 1));
+    const ox = (cc / (gw - 1 || 1)) * (this.regionOrigW - 1 || 0);
+    const oy = (rc / (gh - 1 || 1)) * (this.regionOrigH - 1 || 0);
+
+    let structMedian = NaN;
+    if (structs.length) {
+      structs.sort((a, b) => a - b);
+      structMedian = structs.length % 2 ? structs[(structs.length - 1) >> 1]
+        : 0.5 * (structs[structs.length / 2 - 1] + structs[structs.length / 2]);
+    }
+
+    return {
+      n: vals.length,
+      min: vals[0], max: vals[vals.length - 1],
+      mean, median, sigma: Math.sqrt(variance),
+      structMedian,
+      ox, oy, height: median,
+    };
   }
 
   // ---------------------------------------------------------------- terrain

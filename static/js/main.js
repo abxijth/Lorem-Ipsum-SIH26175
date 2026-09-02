@@ -196,11 +196,31 @@ async function enterView(j) {
     struct = new Float32Array(buf);
   }
 
+  // region grid (full-res heights for robust region stats)
+  let region = null;
+  if (header.region) {
+    try {
+      const rh = new Float32Array(
+        await fetch(assetUrl(state.jobId, header.region.heights)).then((r) => r.arrayBuffer()));
+      let rs = null;
+      if (header.region.struct) {
+        rs = new Float32Array(
+          await fetch(assetUrl(state.jobId, header.region.struct)).then((r) => r.arrayBuffer()));
+      }
+      region = {
+        heights: rh, struct: rs,
+        gridW: header.region.grid[0], gridH: header.region.grid[1],
+        origW: header.region.orig[0], origH: header.region.orig[1],
+      };
+    } catch (e) { console.warn('region grid unavailable', e); }
+  }
+
   state.viewer = new Viewer($('#viewport'), {
     base: '',
     jobId: state.jobId,
     onPick: (info) => showPick(info),
     onGcpAdd: (info) => gcpAddClick(info),
+    onRegion: (stats) => showRegion(stats),
   });
   state.viewer.init(
     header,
@@ -208,7 +228,10 @@ async function enterView(j) {
     struct,
     assetUrl(state.jobId, header.assets.texture),
     header.assets.error ? assetUrl(state.jobId, header.assets.error) : null,
+    region,
   );
+
+  $('#btn-region').classList.toggle('hidden', !region);
 
   // metrics panel
   if (j.metrics && j.metrics.n > 0) showMetrics(j.metrics, header);
@@ -489,7 +512,81 @@ $('#btn-gcp-cancel').addEventListener('click', () => {
   endGcpMode();
 });
 
-// ------------------------------------------------------------------ downloads
+// ------------------------------------------------------------------ region stats + region-GCP
+const regionPanel = $('#region-panel');
+const regionStats = $('#region-stats');
+let regionState = null;   // last computed region stats
+
+$('#btn-region').addEventListener('click', () => {
+  const turningOn = regionPanel.classList.contains('hidden') || !state.viewer?.regionMode;
+  regionPanel.classList.toggle('hidden', !turningOn);
+  if (turningOn) {
+    state.viewer?.setRegionMode(true);
+    $('#region-status').textContent = 'Drag a box on the terrain (e.g. a roof).';
+    $('#btn-region-gcp').disabled = true;
+  } else {
+    state.viewer?.setRegionMode(false);
+  }
+});
+
+function showRegion(stats) {
+  if (!stats) return;
+  regionState = stats;
+  if (regionPanel.classList.contains('hidden')) regionPanel.classList.remove('hidden');
+  state.viewer?.setRegionMode(true);
+  const rows = [
+    ['median', `${fmtH(stats.median)} m`],
+    ['mean', `${fmtH(stats.mean)} m`],
+    ['σ (spread)', `${fmtH(stats.sigma)} m`],
+    ['min / max', `${fmtH(stats.min)} / ${fmtH(stats.max)} m`],
+    ['pixels', Number(stats.n).toLocaleString()],
+  ];
+  if (Number.isFinite(stats.structMedian)) {
+    rows.push(['structure', `${fmtH(stats.structMedian)} m`]);
+  }
+  regionStats.innerHTML = rows
+    .map(([k, v]) => `<span>${k}</span><b>${v}</b>`)
+    .join('');
+  $('#btn-region-gcp').disabled = false;
+  $('#region-status').textContent =
+    `Region tool active. Click “Use region as GCP” to recalibrate, or drag a new box.`;
+}
+
+$('#btn-region-done').addEventListener('click', () => {
+  regionPanel.classList.add('hidden');
+  state.viewer?.setRegionMode(false);
+  regionState = null;
+});
+
+$('#btn-region-gcp').addEventListener('click', async () => {
+  if (!regionState) return;
+  const known = parseFloat($('#region-known').value);
+  const h = Number.isFinite(known) ? known : regionState.height;
+  const pts = [{ x: regionState.ox, y: regionState.oy, h }];
+  $('#region-status').textContent =
+    `Using region median (${fmtH(regionState.height)} m)${Number.isFinite(known) ? ` → ${h.toFixed(2)} m` : ''} as GCP; recalibrating…`;
+  try {
+    const r = await fetch(`/api/jobs/${state.jobId}/refit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ points: pts }),
+    });
+    if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || 'refit failed');
+    await waitDone();
+    const j = await (await fetch(`/api/jobs/${state.jobId}`)).json();
+    state.viewer?.dispose();
+    state.deckView?.dispose(); state.deckView = null;
+    regionState = null;
+    regionPanel.classList.add('hidden');
+    $('#region-known').value = '';
+    await enterView(j);
+    $('#region-status').textContent = j.warnings?.[0] || 'Done. Region recalibrated.';
+  } catch (e) {
+    $('#region-status').textContent = `Error: ${e.message}`;
+  }
+});
+
+
 $('#btn-download').addEventListener('click', () => {
   window.open(`/api/jobs/${state.jobId}/download`, '_blank');
 });

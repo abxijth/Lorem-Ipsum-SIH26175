@@ -198,6 +198,19 @@ def export_web_assets(
         (web / "err_stats.json").write_text(json.dumps(err_stats, indent=2))
         header["assets"]["error"] = "web/err_heat.png"
 
+    # --- Region-select heights (full-res grid for robust region stats) ------
+    # The region tool reads per-pixel heights inside a rectangle; give it a
+    # near-original-resolution Float32 grid (capped for memory) so summaries
+    # (median/mean/σ) over a roof's pixels are statistically meaningful.
+    REGION_MAX = 2048
+    reg_scale = REGION_MAX / max(oh, ow)
+    reg_scale = min(1.0, reg_scale)
+    rhg, rwg = max(1, round(oh * reg_scale)), max(1, round(ow * reg_scale))
+    reg_heights = _downsample(dsm, rhg, rwg)
+    reg_struct = _downsample(struct, rhg, rwg)
+    (web / "region_heights.bin").write_bytes(reg_heights.astype(np.float32, copy=False).tobytes())
+    (web / "region_struct.bin").write_bytes(reg_struct.astype(np.float32, copy=False).tobytes())
+
     # --- Deck.gl TerrainLayer heightmap (TerrariumRGB PNG) ------------------
     # Deck consumes a heightmap *image*, not raw Float32; encode the DSM once at
     # a deck-appropriate mesh size so the browser decodes exact metres back.
@@ -221,6 +234,13 @@ def export_web_assets(
         "meshMaxError": DECK_MESH_MAX_ERROR,
         "grid": [deck_w, deck_h],
         "mode": "absolute" if gr.crs else "relative",
+    }
+
+    header["region"] = {
+        "heights": "web/region_heights.bin",
+        "struct": "web/region_struct.bin",
+        "grid": [rwg, rhg],
+        "orig": [ow, oh],
     }
 
     (web / "header.json").write_text(json.dumps(header, indent=2))
