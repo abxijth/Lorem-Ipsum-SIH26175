@@ -437,13 +437,21 @@ h1, h2, h3, h4 {
 .hero-visual .compare {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 0;
+  padding-bottom: 56.25%;
+  box-sizing: content-box;
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: 12px;
   user-select: none;
   max-width: none;
   --pos: 50%;
+}
+
+.hero-visual .compare-base,
+.hero-visual .compare-overlay {
+  position: absolute;
+  inset: 0;
 }
 
 .hero-visual .compare img {
@@ -455,7 +463,7 @@ h1, h2, h3, h4 {
   display: block;
 }
 
-.hero-visual .compare-overlay { position: absolute; inset: 0; clip-path: inset(0 calc(100% - var(--pos)) 0 0); }
+.hero-visual .compare-overlay { clip-path: inset(0 calc(100% - var(--pos)) 0 0); }
 
 .hero-visual .compare-handle {
   position: absolute;
