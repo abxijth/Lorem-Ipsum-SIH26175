@@ -839,50 +839,41 @@ h1, h2, h3, h4 {
    FOOTER
    ============================================================ */
 
-.footer {
+ .footer {
   background: var(--footer-bg);
   color: var(--white);
-  padding: 80px 0 40px;
+  padding: 96px 0 48px;
 }
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 2fr 2fr 1fr 1fr;
-  gap: 48px;
-}
-
-@media (max-width: 768px) {
-  .footer-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 40px 24px;
-  }
-}
-
-@media (max-width: 480px) {
-  .footer-grid { grid-template-columns: 1fr; }
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 64px;
+  align-items: start;
 }
 
 .footer-brand-name {
   font-size: 48px;
   font-weight: 700;
   letter-spacing: -0.05em;
-  line-height: 0.9;
-  margin-bottom: 16px;
+  line-height: 0.92;
+  margin-bottom: 20px;
+  text-transform: capitalize;
 }
 
 .footer-brand-bio {
-  font-size: 15px;
+  font-size: 13px;
   color: var(--muted-2);
-  line-height: 1.6;
-  max-width: 320px;
+  line-height: 1.5;
+  max-width: 300px;
 }
 
 .footer-col-title {
-  font-size: 13px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.18em;
   color: var(--muted-2);
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   font-weight: 600;
 }
 
@@ -890,11 +881,11 @@ h1, h2, h3, h4 {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .footer-col a {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--white);
   transition: color 300ms var(--ease);
 }
@@ -904,18 +895,16 @@ h1, h2, h3, h4 {
 }
 
 .footer-bottom {
-  margin-top: 60px;
-  padding-top: 24px;
+  margin-top: 72px;
+  padding-top: 32px;
   border-top: 1px solid rgba(255, 255, 255, 0.10);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-size: 13px;
+  letter-spacing: 0.01em;
   color: var(--muted-2);
 }
 
@@ -1213,29 +1202,7 @@ h1, h2, h3, h4 {
 
 /* ============================================================
    FOOTER ROSTER
-   ============================================================ */
-
-.footer-roster {
-  margin-top: 48px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
-}
-
-.footer-roster-title {
-  color: var(--muted-2);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  display: block;
-  margin-bottom: 16px;
-  font-weight: 600;
-}
-
-.footer-roster-name {
-  font-size: 15px;
-  color: var(--white);
-  line-height: 1.8;
-}
+    ============================================================ */
 
 /* ============================================================
    RESPONSIVE — TABLET / LARGE MOBILE (<= 768px)
@@ -1320,7 +1287,10 @@ h1, h2, h3, h4 {
 
   .footer { padding: 64px 0 32px; }
   .footer-brand-name { font-size: 40px; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 40px 32px; align-items: start; }
+  .footer-brand { grid-column: 1 / -1; margin-bottom: 8px; }
   .footer-bottom { font-size: 11px; gap: 10px; justify-content: center; text-align: center; }
+  .footer-bottom { margin-top: 48px; padding-top: 24px; }
 
   .marquee-item { font-size: 13px; }
   .marquee-track { gap: 48px; }
