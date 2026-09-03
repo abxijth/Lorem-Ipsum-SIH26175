@@ -108,7 +108,7 @@ export class DeckView {
       },
       layers,
       view: new window.deck.MapView({ repeat: false }),
-      clearColor: [5, 7, 10, 255],
+      clearColor: [10, 10, 10, 255],
       getTooltip: () => null,
     });
 

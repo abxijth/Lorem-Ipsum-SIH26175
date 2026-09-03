@@ -57,7 +57,7 @@ export class Viewer {
     const { grid_w: gw, grid_h: gh } = header;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x05070a);
+    this.scene.background = new THREE.Color(0x0a0a0a);
 
     this.camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1e6);
 
@@ -75,7 +75,7 @@ export class Viewer {
     this.fly.rollSpeed = 0.18;
     this.fly.dragToLook = true;
 
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 0.95));
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3a3a, 0.95));
     const sun = new THREE.DirectionalLight(0xffffff, 1.4);
     sun.position.set(gw * 0.5, -gh * 0.5, gw * 0.6);
     this.scene.add(sun);
