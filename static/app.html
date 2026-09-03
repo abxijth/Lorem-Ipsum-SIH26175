@@ -3,7 +3,25 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#FFFFFF" />
 <title>DepthWizard — 3D Terrain Flythrough</title>
+<link rel="icon" type="image/svg+xml" href="/media/favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+  (function () {
+    try {
+      var stored = localStorage.getItem('dw-theme');
+    } catch (e) { stored = null; }
+    var dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      var m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute('content', '#0A0A0A');
+    }
+  })();
+</script>
 <link rel="stylesheet" href="css/style.css" />
 <link rel="preconnect" href="/vendor/three.module.js" />
 <script type="importmap">
@@ -20,8 +38,8 @@
 <div id="app">
   <header id="topbar">
     <div class="brand">
-      <span class="logo">◈</span>
-      <span class="title">DepthWizard</span>
+      <span class="logo">dw</span>
+      <span class="brand-name">DepthWizard</span>
       <span class="subtitle">optical → 3D terrain → flythrough</span>
     </div>
     <div id="job-state" class="hidden"></div>
@@ -30,39 +48,103 @@
   </header>
 
   <!-- Upload screen -->
-  <section id="screen-upload" class="screen active">
-    <div class="card">
-      <h1>Upload imagery</h1>
-      <p class="hint">PNG / JPG / GeoTIFF. Add a bounding box for georeferenced DSM + SRTM terrain,
-      and optionally a reference GeoTIFF to validate height accuracy in 3D.</p>
+  <section id="screen-upload" class="screen upload-screen active">
+    <div class="upload-workspace">
+      <header class="upload-hdr">
+        <div class="upload-hdr-titles">
+          <span class="eyebrow">DEPTHWIZARD&nbsp;&nbsp;/&nbsp;&nbsp;INPUT</span>
+          <h1 class="upload-h1">Upload imagery</h1>
+        </div>
+      </header>
 
-      <div id="dropzone" class="dropzone">
-        <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.tif,.tiff" />
-        <div class="dz-inner">
-          <div class="dz-icon">⬆</div>
-          <div class="dz-text">Drag &amp; drop your image here, or <span class="link">click to browse</span></div>
-          <div id="dropzone-name" class="dz-file"></div>
+      <p class="upload-intro">
+        Aerial &amp; satellite imagery — optionally paired with reference elevation data — is processed
+        into a georeferenced 3D terrain model.
+      </p>
+
+      <div class="upload-grid">
+        <!-- MAIN COLUMN -->
+        <div class="upload-main">
+
+          <!-- Imagery dropzone -->
+          <div id="dropzone" class="dropzone">
+            <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.tif,.tiff" />
+
+            <!-- empty state -->
+            <div class="dz-empty">
+              <div class="dz-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 16V5" />
+                  <path d="M7 9l5-5 5 5" />
+                  <path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />
+                </svg>
+              </div>
+              <div class="dz-text">Drop imagery here</div>
+              <div class="dz-support">PNG, JPG or GeoTIFF · single image</div>
+              <button type="button" class="dz-browse" id="dz-browse">Browse files</button>
+            </div>
+
+            <!-- file preview (shown once selected) -->
+            <div id="file-preview" class="file-preview hidden">
+              <div class="fp-file">
+                <span class="fp-name" id="dropzone-name"></span>
+                <span class="fp-meta" id="fp-meta"></span>
+              </div>
+              <div class="fp-status">Ready to process</div>
+              <button type="button" class="fp-remove" id="fp-remove" title="Remove file">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Bounding box -->
+          <div class="field-block">
+            <div class="field-head">
+              <span class="field-label">Bounding box</span>
+              <span class="field-tag">WGS84 · west south east north</span>
+            </div>
+            <div class="bbox-row">
+              <input type="text" id="bbox" class="mono" placeholder="-82.5750&nbsp;&nbsp;35.4988&nbsp;&nbsp;-82.5600&nbsp;&nbsp;35.5138" spellcheck="false" autocomplete="off" />
+              <span class="bbox-opt">optional</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIDE COLUMN -->
+        <div class="upload-side">
+          <div class="field-block ref-block">
+            <div class="field-head">
+              <span class="field-label">Reference GeoTIFF</span>
+              <span class="field-tag">optional</span>
+            </div>
+            <p class="ref-note">Validate height accuracy (RMSE / MAE) in 3D.</p>
+            <label class="ref-picker" for="ref-input">
+              <input type="file" id="ref-input" accept=".tif,.tiff" />
+              <span class="ref-picker-label" id="ref-picker-label">Choose reference</span>
+              <span class="ref-picker-hint mono" id="ref-picker-file">.tif / .tiff</span>
+            </label>
+          </div>
+
+          <div class="meta">
+            <div class="meta-row"><span class="meta-k">INPUT</span><span class="meta-v">Single aerial image</span></div>
+            <div class="meta-row"><span class="meta-k">DEPTH</span><span class="meta-v">Depth Anything V2</span></div>
+            <div class="meta-row"><span class="meta-k">TERRAIN</span><span class="meta-v">SRTM baseline</span></div>
+            <div class="meta-row"><span class="meta-k">OUTPUT</span><span class="meta-v">WGS84 GeoTIFF · 3D</span></div>
+          </div>
         </div>
       </div>
 
-      <div class="fields">
-        <label>Bounding box <span class="muted">west south east north (WGS84)</span>
-          <input type="text" id="bbox" placeholder="-82.5750 35.4988 -82.5600 35.5138" />
-        </label>
-        <label>Reference GeoTIFF <span class="muted">optional — for RMSE/MAE/Pearson validation</span>
-          <input type="file" id="ref-input" accept=".tif,.tiff" />
-        </label>
-      </div>
-
-      <div class="row">
-        <button id="btn-process" class="primary" disabled>Generate 3D terrain</button>
+      <footer class="upload-actions">
+        <button id="btn-process" class="primary" disabled>Generate 3D terrain &nbsp;→</button>
         <div id="upload-error" class="error"></div>
-      </div>
+      </footer>
 
-      <div id="samples" class="samples">
-        <span class="muted">or try a sample:</span>
-        <button class="sample" data-sample="hilly">Hilly (Asheville)</button>
-        <button class="sample" data-sample="forest">Forest (GSMNP)</button>
+      <div id="samples" class="samples quickstart">
+        <span class="qs-label">QUICK START</span>
+        <button class="sample" data-sample="hilly">Hilly · Asheville</button>
+        <button class="sample" data-sample="forest">Forest · GSMNP</button>
       </div>
     </div>
   </section>

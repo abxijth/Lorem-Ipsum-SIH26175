@@ -61,9 +61,32 @@ function pickFile(f) {
   $('#upload-error').textContent = '';
   chosenFile = f;
   $('#dropzone-name').textContent = f.name;
-  $('.dz-text').classList.add('hidden');
+  $('#fp-meta').textContent = fileKind(f.name) + ' · ' + fileSize(f.size);
+  $('.dz-empty').classList.add('hidden');
+  $('#file-preview').classList.remove('hidden');
   $('#btn-process').disabled = false;
 }
+
+function fileKind(name) {
+  if (/\.(tiff?)$/i.test(name)) return 'GeoTIFF';
+  if (/\.png$/i.test(name)) return 'PNG';
+  return 'JPG';
+}
+function fileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+$('#fp-remove').addEventListener('click', (e) => {
+  e.stopPropagation();
+  resetUpload();
+});
+$('#ref-input').addEventListener('change', () => {
+  const r = $('#ref-input').files[0];
+  $('#ref-picker-label').textContent = r ? 'Reference selected' : 'Choose reference';
+  $('#ref-picker-file').textContent = r ? r.name : '.tif / .tiff';
+});
 
 $('#btn-process').addEventListener('click', async () => {
   if (!chosenFile) return;
@@ -106,9 +129,13 @@ $('#btn-new').addEventListener('click', () => {
 function resetUpload() {
   chosenFile = null;
   $('#dropzone-name').textContent = '';
-  $('.dz-text').classList.remove('hidden');
+  $('#fp-meta').textContent = '';
+  $('.dz-empty').classList.remove('hidden');
+  $('#file-preview').classList.add('hidden');
   $('#btn-process').disabled = true;
   $('#ref-input').value = '';
+  $('#ref-picker-label').textContent = 'Choose reference';
+  $('#ref-picker-file').textContent = '.tif / .tiff';
   $('#bbox').value = '';
   $('#upload-error').textContent = '';
 }
