@@ -37,13 +37,19 @@
 <body>
 <div id="app">
   <header id="topbar">
-    <div class="brand">
+    <a class="brand" href="/" aria-label="DepthWizard — back to landing page">
       <span class="logo">dw</span>
       <span class="brand-name">DepthWizard</span>
-      <span class="subtitle">optical → 3D terrain → flythrough</span>
-    </div>
-    <div id="job-state" class="hidden"></div>
+    </a>
+    <span class="subtitle">Optical &rarr; 3D Terrain &rarr; Flythrough</span>
     <div class="spacer"></div>
+    <nav class="topnav" aria-label="Primary">
+      <a class="topnav-link" href="/">Home</a>
+      <a class="topnav-link" href="/#pipeline">Pipeline</a>
+      <a class="topnav-link" href="/#team">Team</a>
+      <a class="topnav-link topnav-current" href="/app" aria-current="page">App</a>
+    </nav>
+    <div id="job-state" class="hidden"></div>
     <button id="btn-new" class="ghost hidden">New upload</button>
   </header>
 
@@ -140,12 +146,6 @@
         <button id="btn-process" class="primary" disabled>Generate 3D terrain &nbsp;→</button>
         <div id="upload-error" class="error"></div>
       </footer>
-
-      <div id="samples" class="samples quickstart">
-        <span class="qs-label">QUICK START</span>
-        <button class="sample" data-sample="hilly">Hilly · Asheville</button>
-        <button class="sample" data-sample="forest">Forest · GSMNP</button>
-      </div>
     </div>
   </section>
 
