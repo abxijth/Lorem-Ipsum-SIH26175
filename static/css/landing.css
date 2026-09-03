@@ -430,23 +430,72 @@ h1, h2, h3, h4 {
 
 .hero-visual {
   margin: 56px auto 0;
-  max-width: 720px;
+  max-width: 760px;
   text-align: left;
 }
 
-.hero-visual img {
+.hero-visual .compare {
+  position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: 12px;
-  filter: grayscale(25%);
-  transition: filter 700ms var(--ease);
+  user-select: none;
+  max-width: none;
+  --pos: 50%;
 }
 
-.hero-visual:hover img {
-  filter: grayscale(0%);
+.hero-visual .compare img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
+
+.hero-visual .compare-overlay { position: absolute; inset: 0; clip-path: inset(0 calc(100% - var(--pos)) 0 0); }
+
+.hero-visual .compare-handle {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: var(--pos);
+  width: 2px;
+  margin-left: 0;
+  background: rgba(255, 255, 255, 0.85);
+  transform: translateX(-1px);
+  cursor: ew-resize;
+  z-index: 3;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.hero-visual .compare-handle::after {
+  content: "" !important;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: rgba(15, 16, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
+}
+.hero-visual .compare-handle::before {
+  content: "⟨  ⟩" !important;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  line-height: 1;
+}
+
+.hero-visual .compare-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ============================================================
    MARQUEE
@@ -1337,10 +1386,6 @@ h1, h2, h3, h4 {
   }
   .project-image .overlay { opacity: 0.10; }
   .project-image .arrow-icon { opacity: 1; transform: none; }
-
-  .hero-visual img {
-    filter: grayscale(0%);
-  }
 
   .compare-handle { pointer-events: auto; }
 

@@ -514,4 +514,36 @@
     }, { passive: false });
   }
 
+  /* ============================================================
+     HERO BEFORE / AFTER SLIDER (clip-path version)
+     ============================================================ */
+  var hero = document.getElementById('heroCompare');
+  if (hero) {
+    var heroDrag = false;
+
+    function heroSet(clientX) {
+      var rect = hero.getBoundingClientRect();
+      if (rect.width === 0) return;
+      var pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * 100;
+      hero.style.setProperty('--pos', pct + '%');
+    }
+    function heroDown(e) {
+      heroDrag = true;
+      e.preventDefault();
+      heroSet(e.clientX !== undefined ? e.clientX : e.touches[0].clientX);
+    }
+    function heroMove(e) {
+      if (!heroDrag) return;
+      heroSet(e.clientX !== undefined ? e.clientX : e.touches[0].clientX);
+    }
+    function heroUp() { heroDrag = false; }
+
+    hero.addEventListener('mousedown', heroDown);
+    window.addEventListener('mousemove', heroMove);
+    window.addEventListener('mouseup', heroUp);
+    hero.addEventListener('touchstart', heroDown, { passive: false });
+    window.addEventListener('touchmove', heroMove, { passive: false });
+    window.addEventListener('touchend', heroUp);
+  }
+
 })();

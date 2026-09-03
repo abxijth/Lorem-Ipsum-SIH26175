@@ -90,8 +90,16 @@
         </p>
 
         <figure class="hero-visual">
-          <img src="/media/showcase-3d.webp" alt="Live 3D terrain reconstruction rendered in the DepthWizard viewer" loading="eager" />
-          <figcaption class="mono">Fig.01 — Live 3D reconstruction</figcaption>
+          <div class="compare" id="heroCompare">
+            <div class="compare-base">
+              <img src="/media/slider-after.jpeg" alt="DepthWizard-terrain reconstruction after calibration" loading="eager" />
+            </div>
+            <div class="compare-overlay" id="heroCompareOverlay">
+              <img src="/media/slider-before.jpeg" alt="DepthWizard raw relative elevation before calibration" loading="eager" />
+            </div>
+            <div class="compare-handle" id="heroCompareHandle" role="slider" aria-label="Compare before and after" tabindex="0"></div>
+          </div>
+          <figcaption class="mono">Fig.01 — Before &harr; After</figcaption>
         </figure>
       </div>
     </section>
