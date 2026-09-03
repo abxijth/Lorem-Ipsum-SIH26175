@@ -13,3 +13,7 @@ results/gcp_test/**/*.png
 results/external/**/*.tif
 results/external/**/*.png
 results/web/
+
+# Local UI design snapshots / restore points (not source)
+static/backup-*/
+static/img/
