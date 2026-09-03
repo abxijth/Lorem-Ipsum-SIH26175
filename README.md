@@ -302,6 +302,18 @@ Documentation:
 
 ---
 
+## License
+
+DepthWizard is released under the [MIT License](LICENSE).
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Third-party models, datasets, and libraries remain under their own licenses
+(e.g. Depth-Anything V2 — Apache-2.0, GAMUS — CC-BY-4.0). See the
+[NOTICE](NOTICE) file and the "Data & credits" table above for attribution.
+
+---
+
 ## Roadmap
 
 - **Done:** FastAPI `/process` endpoint + **Three.js** terrain flythrough +

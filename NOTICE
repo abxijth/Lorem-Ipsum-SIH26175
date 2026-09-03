@@ -1,0 +1,33 @@
+DepthWizard (SIH26175)
+MIT Licensed — see LICENSE.
+
+NOTICE — Third-Party Licenses & Attribution
+============================================
+
+This project integrates and, in some cases, distributes third-party software
+and datasets that remain under their own respective licenses. The project's
+MIT license applies only to the original DepthWizard code, not to these
+third-party components.
+
+1) Depth-Anything V2 (Small) — base depth backbone
+   - Source: https://huggingface.co/depth-anything/Depth-Anything-V2-Small-hf
+   - License: Apache-2.0
+   - The weights shipped under `models/finetuned/` are a GAMUS fine-tune of
+     this Apache-2.0 model. Redistribution must include this attribution and
+     a copy of the Apache-2.0 license for this component.
+
+2) GAMUS dataset (RGB + nDSM + classes)
+   - Source: https://huggingface.co/datasets/earthflow/GAMUS — TU Munich / DLR
+   - License: CC-BY-4.0
+   - Used to fine-tune the depth backbone and for validation. Dataset files
+     themselves are not redistributed in the binary release.
+
+3) SRTM 30 m terrain — AWS Open Data (`elevation-tiles-prod/skadi`) — public domain.
+4) External validation imagery — USGS imagery basemap (NAIP-derived) — public domain.
+5) External reference DEM — USGS 3DEP (bare earth) · Copernicus GLO-30 (surface) — public domain.
+
+Frontend / runtime libraries are bundled or referenced under their own terms:
+   - Three.js (MIT), Deck.gl (Apache-2.0), and the PyTorch (BSD-3-Clause),
+     Transformers (Apache-2.0), Rasterio (BSD-3-Clause) stacks used at runtime.
+
+See the "Data & credits" section of README.md for the full attribution table.
