@@ -152,28 +152,27 @@
           <div class="approach-item">
             <h3 class="h4">The locked-away truth</h3>
             <p class="body-lg text-secondary">
-              Accurate elevation is the invisible foundation of modern planning —
-              disaster response, defence, urban design, agriculture. Yet it lives
-              behind paywalls, slow coordinate grids, and dated DEM tapes that
-              can't be regenerated for a crisis zone on demand.
+              Accurate elevation underpins disaster response, urban planning,
+              agriculture, and infrastructure. But useful terrain data can be
+              expensive, difficult to source, or unavailable when you need it most.
             </p>
           </div>
           <div class="approach-item">
             <h3 class="h4">The decode</h3>
             <p class="body-lg text-secondary">
-              A single nadir image encodes shape. DepthWizard's model extracts
-              that depth per-pixel, calibrates it to true metre height with a
-              robust linear fit, grounds it on a 30 m SRTM terrain baseline, and
-              emits a WGS84 DSM GeoTIFF — plus an interactive
-              <strong style="font-weight:600">3D flythrough</strong> in your browser.
+              A single nadir image contains more about terrain shape than it
+              appears to. DepthWizard extracts a per-pixel depth map with a
+              fine-tuned depth model, calibrates it to real-world elevation,
+              anchors it against SRTM terrain, and produces a WGS84 GeoTIFF DSM
+              with an interactive 3D view.
             </p>
           </div>
           <div class="approach-item">
-            <h3 class="h4">Built for speed</h3>
+            <h3 class="h4">Built to be practical</h3>
             <p class="body-lg text-secondary">
-              From upload to interactive 3D terrain in under a minute on a laptop
-              GPU — one frame in, a living landscape out. Optional bounding-box
-              and a reference GeoTIFF add live, honest validation.
+              No specialized survey hardware. No manual DEM processing. Upload an
+              image, provide its location, and let the pipeline handle inference,
+              calibration, georeferencing, and export in one workflow.
             </p>
           </div>
         </div>
@@ -265,35 +264,35 @@
             <span class="pipe-num mono">01</span>
             <div class="pipe-body">
               <h3 class="h4">Georeference</h3>
-              <p class="body text-secondary">Reads CRS + transform from a GeoTIFF, or takes an optional WGS84 bounding box, or falls back to relative-only visual mode.</p>
+              <p class="body text-secondary">Reads CRS + transform from a GeoTIFF, or accepts an optional WGS84 bounding box, with relative-only mode when geographic metadata is unavailable.</p>
             </div>
           </div>
           <div class="pipeline-row">
             <span class="pipe-num mono">02</span>
             <div class="pipe-body">
               <h3 class="h4">Tiled depth inference</h3>
-              <p class="body text-secondary">A Depth-Anything-V2 transformer, fine-tuned on the GAMUS urban dataset, predicts depth per pixel. Overlapping 518&#8203;px tiles are stitched with cosine-feather blending — tiling is what recovered real signal.</p>
+              <p class="body text-secondary">A GAMUS fine-tuned Depth-Anything-V2 model predicts depth per pixel. Overlapping 518px tiles are stitched with cosine-feather blending for a continuous structural map.</p>
             </div>
           </div>
           <div class="pipeline-row">
             <span class="pipe-num mono">03</span>
             <div class="pipe-body">
-              <h3 class="h4">Calibration</h3>
-              <p class="body text-secondary">A robust RANSAC linear fit converts relative depth to metric structural height (shipped slope 0.9684, intercept 0.13 m). Click 1–2 known points in the viewer to refit on the spot.</p>
+              <h3 class="h4">Metric calibration</h3>
+              <p class="body text-secondary">A robust RANSAC fit converts relative depth into metric structural height. 1–2 known points can be added in the viewer to refine the calibration for the scene.</p>
             </div>
           </div>
           <div class="pipeline-row">
             <span class="pipe-num mono">04</span>
             <div class="pipe-body">
               <h3 class="h4">Terrain baseline</h3>
-              <p class="body text-secondary">30 m SRTM ground elevation is fetched on demand from AWS Open Data and resampled onto the image grid — no GDAL CLI, no API keys.</p>
+              <p class="body text-secondary">30 m SRTM ground elevation is fetched on demand and resampled onto the image grid, providing the terrain baseline beneath the predicted structures.</p>
             </div>
           </div>
           <div class="pipeline-row">
             <span class="pipe-num mono">05</span>
             <div class="pipe-body">
               <h3 class="h4">DSM + export</h3>
-              <p class="body text-secondary">Absolute DSM = SRTM baseline + calibrated structure, written as a Float32 WGS84 GeoTIFF. Rendered interactively in Three.js and Deck.gl with region statistics.</p>
+              <p class="body text-secondary">Absolute DSM = SRTM terrain + calibrated structure, exported as a Float32 WGS84 GeoTIFF. Results are rendered interactively in Three.js and Deck.gl with region statistics.</p>
             </div>
           </div>
         </div>
@@ -418,33 +417,33 @@
         <div class="cases-grid">
           <div class="case-row">
             <span class="mono case-label">01</span>
-            <h3 class="h4">Disaster response</h3>
-            <p class="body text-secondary">Rapid terrain assessment from one post-event frame, when the area has no up-to-date elevation data.</p>
+            <h3 class="h4">Disaster assessment</h3>
+            <p class="body text-secondary">Rapidly estimate terrain and structural elevation from post-event imagery when current elevation data is unavailable.</p>
           </div>
           <div class="case-row">
             <span class="mono case-label">02</span>
-            <h3 class="h4">Urban planning</h3>
-            <p class="body text-secondary">Structural and building-height insight, calibrated for the urban domain with sub-2.3 m accuracy in tested cities.</p>
+            <h3 class="h4">Building height estimation</h3>
+            <p class="body text-secondary">Extract structural heights from a single optical image, providing measurements for buildings without requiring stereo imagery or LiDAR.</p>
           </div>
           <div class="case-row">
             <span class="mono case-label">03</span>
-            <h3 class="h4">Defence &amp; recon</h3>
-            <p class="body text-secondary">First-look 3D reconstruction from a single nadir reconnaissance frame.</p>
+            <h3 class="h4">Terrain &amp; slope analysis</h3>
+            <p class="body text-secondary">Reconstruct elevation surfaces across urban, sparse, hilly, and forested landscapes for terrain and slope assessment.</p>
           </div>
           <div class="case-row">
             <span class="mono case-label">04</span>
-            <h3 class="h4">Civil &amp; GIS</h3>
-            <p class="body text-secondary">A georeferenced Float32 DSM GeoTIFF that drops straight into existing GIS pipelines in WGS84.</p>
+            <h3 class="h4">3D aerial reconnaissance</h3>
+            <p class="body text-secondary">Transform a single image into an immersive, navigable 3D environment for first-look aerial reconnaissance and spatial inspection.</p>
           </div>
           <div class="case-row">
             <span class="mono case-label">05</span>
-            <h3 class="h4">Forest &amp; terrain</h3>
-            <p class="body text-secondary">Partial canopy and 93 m-relief hills captured with strong correlation, grounded on the SRTM baseline.</p>
+            <h3 class="h4">Geospatial elevation mapping</h3>
+            <p class="body text-secondary">Convert relative depth into metric elevation using SRTM or minimal Ground Control Points, producing an absolute DSM for geospatial analysis.</p>
           </div>
           <div class="case-row">
             <span class="mono case-label">06</span>
-            <h3 class="h4">Hackathon rigour</h3>
-            <p class="body text-secondary">A measured, reproducible MVP that documents what was tested, adopted, and — honestly — rejected.</p>
+            <h3 class="h4">GIS-ready DSM export</h3>
+            <p class="body text-secondary">Generate standardized, georeferenced DSM GeoTIFFs that can be taken directly into existing GIS workflows for further analysis and mapping.</p>
           </div>
         </div>
       </div>
@@ -462,15 +461,15 @@
         <div class="approach-grid">
           <div class="approach-item">
             <h3 class="h4">Built for urban</h3>
-            <p class="body text-secondary">The model is fine-tuned on the GAMUS urban dataset. Forest canopy is only partially captured; flat, relief-free surfaces give low signal.</p>
+            <p class="body text-secondary">The model is fine-tuned on the GAMUS urban dataset. Forest canopy is only partially captured, while flat surfaces with little relief provide limited depth signal.</p>
           </div>
           <div class="approach-item">
             <h3 class="h4">Relative until calibrated</h3>
-            <p class="body text-secondary">Estimates are relative until calibrated. For survey-grade work, drop a couple of known heights — RMSE drops from 3.17 m to 1.86 m.</p>
+            <p class="body text-secondary">Raw estimates are relative until calibrated to known elevations. Adding a few known heights can substantially improve elevation accuracy, depending on the scene and calibration data.</p>
           </div>
           <div class="approach-item">
             <h3 class="h4">We measure, then decide</h3>
-            <p class="body text-secondary">Segmentation and piecewise calibration were tested and gated out because gains fell below our 5–10% promote bar. That's the point — not everything ships.</p>
+            <p class="body text-secondary">Segmentation and piecewise calibration were tested but not promoted because their gains stayed below our 5 to 10% improvement threshold. Not every experiment needs to ship.</p>
           </div>
         </div>
       </div>
