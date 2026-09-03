@@ -986,106 +986,6 @@ h1, h2, h3, h4 {
 }
 
 /* ============================================================
-   BEFORE / AFTER COMPARISON
-   ============================================================ */
-
-.compare {
-  max-width: 960px;
-}
-
-.compare-view {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border: 1px solid var(--line-strong);
-  border-radius: 12px;
-  background: var(--panel);
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: pan-y;
-}
-
-.compare-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  pointer-events: none;
-}
-
-.compare-foreground {
-  position: absolute;
-  inset: 0;
-  width: 50%;
-  overflow: hidden;
-  /* clip the right edge so it only reveals the "after" portion */
-  border-right: 1px solid var(--white);
-}
-
-.compare-foreground .compare-img {
-  position: absolute;
-  inset: 0;
-}
-
-.compare-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  margin-left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  cursor: ew-resize;
-  pointer-events: none;
-  z-index: 3;
-}
-
-.compare-handle .compare-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 1px;
-  background: var(--white);
-}
-
-.compare-chevron {
-  position: relative;
-  z-index: 1;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--white);
-  color: var(--ink);
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.compare-tag {
-  position: absolute;
-  bottom: 12px;
-  padding: 4px 10px;
-  background: var(--white);
-  color: var(--ink);
-  border-radius: 4px;
-  font-size: 12px;
-  z-index: 3;
-}
-
-.compare-tag-left { left: 12px; }
-.compare-tag-right { right: 12px; }
-
-/* ============================================================
    TEAM FLIP CARDS
    ============================================================ */
 
@@ -1102,7 +1002,6 @@ h1, h2, h3, h4 {
 @media (max-width: 600px) {
   .team-grid { grid-template-columns: 1fr; }
   .team-card-scene { height: 280px; }
-  .compare-view { aspect-ratio: 4 / 3; }
 
   /* compact the hanging bulb so its circle matches the menu button's
      28px circle and sits at the same height */
