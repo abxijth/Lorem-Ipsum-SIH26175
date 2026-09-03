@@ -445,12 +445,24 @@
   var hero = document.getElementById('heroCompare');
   if (hero) {
     var heroDrag = false;
+    var heroOverlay = hero.querySelector('.compare-overlay');
+    var heroHandle = document.getElementById('heroCompareHandle') || hero.querySelector('.compare-handle');
+
+    function heroApply(pct) {
+      // set concrete values directly rather than via a CSS custom property —
+      // Chromium does not repaint clip-path when a referenced CSS var changes,
+      // which broke the slider in Chrome/Edge (works in Firefox/Safari).
+      heroOverlay.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+      if (heroHandle) heroHandle.style.left = pct + '%';
+      hero.style.setProperty('--pos', pct + '%');
+      if (heroHandle && heroHandle.setAttribute) heroHandle.setAttribute('aria-valuenow', String(Math.round(pct)));
+    }
 
     function heroSet(clientX) {
       var rect = hero.getBoundingClientRect();
       if (rect.width === 0) return;
       var pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * 100;
-      hero.style.setProperty('--pos', pct + '%');
+      heroApply(pct);
     }
     function heroDown(e) {
       heroDrag = true;
@@ -469,6 +481,8 @@
     hero.addEventListener('touchstart', heroDown, { passive: false });
     window.addEventListener('touchmove', heroMove, { passive: false });
     window.addEventListener('touchend', heroUp);
+
+    heroApply(50);
   }
 
 })();
