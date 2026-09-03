@@ -503,7 +503,6 @@ canvas { display: block; }
 .region-panel .region-stats b { font-variant-numeric: tabular-nums; font-weight: 600; }
 .region-panel .known-height { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
 .region-panel .known-height input { width: 100%; background: var(--surface); border: 1px solid var(--line); color: var(--ink); border-radius: 0; padding: 6px 10px; font: inherit; }
-#region-select-box { position: fixed; border: 2px solid var(--ink); background: rgba(128,128,128,.12); pointer-events: none; z-index: 12; display: none; }
 
 .download {
   position: absolute; bottom: 84px; right: 18px;

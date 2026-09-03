@@ -32,6 +32,11 @@ export class Viewer {
     this._regionStruct = null;
     this.regionGridW = 0;
     this.regionGridH = 0;
+    this.regionOrigW = 0;
+    this.regionOrigH = 0;
+    this._regionPts = [];
+    this._regionGroup = null;
+    this._regionCleanup = null;
     this._rgbTex = null;
     this._errTex = null;
     this._overlayTex = null;
@@ -181,85 +186,144 @@ export class Viewer {
   setRegionMode(on) {
     this.regionMode = on;
     this.renderer.domElement.style.cursor = on ? 'crosshair' : '';
-    if (on) this._beginRegionDrag();
-    else this._clearRegionBox();
+    if (on) this._beginRegionPen();
+    else this._clearRegion();
   }
 
-  _beginRegionDrag() {
+  _beginRegionPen() {
+    if (this._regionCleanup) { this._regionCleanup(); this._regionCleanup = null; }
     const el = this.renderer.domElement;
-    let box = document.getElementById('region-select-box');
-    if (!box) {
-      box = document.createElement('div');
-      box.id = 'region-select-box';
-      this.container.appendChild(box);
+    this._regionPts = [];
+    if (this._regionGroup) {
+      this.scene.remove(this._regionGroup);
+      this._regionGroup = null;
     }
-    let start = null;
+    this._regionGroup = new THREE.Group();
+    this.scene.add(this._regionGroup);
 
-    const onDown = (e) => {
+    const onClick = (e) => {
       if (e.button !== 0) return;
-      if (this.orbit) this.orbit.enabled = false;
-      start = { x: e.clientX, y: e.clientY };
-      box.style.display = 'block';
-      box.style.left = `${e.clientX}px`;
-      box.style.top = `${e.clientY}px`;
-      box.style.width = '0px';
-      box.style.height = '0px';
-      box.dataset.active = '1';
+      if (this._pressPos) {
+        const dx = e.clientX - this._pressPos.x;
+        const dy = e.clientY - this._pressPos.y;
+        if (Math.hypot(dx, dy) > 4) { this._pressPos = null; return; }
+        this._pressPos = null;
+      }
+      const hit = this._rayToGridExact(e.clientX, e.clientY);
+      if (!hit) return;
+      this._addRegionVertex(hit);
     };
-    const onMove = (e) => {
-      if (!start || box.dataset.active !== '1') return;
-      const x = Math.min(e.clientX, start.x), y = Math.min(e.clientY, start.y);
-      box.style.left = `${x}px`;
-      box.style.top = `${y}px`;
-      box.style.width = `${Math.abs(e.clientX - start.x)}px`;
-      box.style.height = `${Math.abs(e.clientY - start.y)}px`;
+    const onDown = (e) => { if (e.button === 0) this._pressPos = { x: e.clientX, y: e.clientY }; };
+    const onKey = (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') this._resetRegion();
+      else if (e.key === 'Backspace') this._removeLastRegionVertex();
     };
-    const onUp = (e) => {
-      if (!start || box.dataset.active !== '1') return;
-      box.dataset.active = '0';
-      const wdt = Math.abs(e.clientX - start.x), hgt = Math.abs(e.clientY - start.y);
-      if (wdt < 5 || hgt < 5) { start = null; box.style.display = 'none'; return; }
-      const x0 = Math.min(start.x, e.clientX), y0 = Math.min(start.y, e.clientY);
-      start = null;
-      this._regionFromScreenRect(x0, y0, x0 + wdt, y0 + hgt);
-      box.style.display = 'none';
-    };
+    const onCtx = (e) => { e.preventDefault(); this._removeLastRegionVertex(); };
+
     const cleanup = () => {
+      el.removeEventListener('click', onClick);
       el.removeEventListener('mousedown', onDown);
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      if (this.orbit) this.orbit.enabled = true;
-      this._clearRegionBox();
+      window.removeEventListener('keydown', onKey);
+      el.removeEventListener('contextmenu', onCtx);
     };
     this._regionCleanup = cleanup;
+    el.addEventListener('click', onClick);
     el.addEventListener('mousedown', onDown);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener('keydown', onKey);
+    el.addEventListener('contextmenu', onCtx);
   }
 
-  _clearRegionBox() {
-    const box = document.getElementById('region-select-box');
-    if (box) box.style.display = 'none';
-  }
+  _addRegionVertex(hit) {
+    if (!this._regionPts.length) { this._regionPts.push(hit); this._rebuildRegionOverlay(); return; }
 
-  /** Screen rect -> raycast 4 corners -> region grid rect -> stats. */
-  _regionFromScreenRect(x0, y0, x1, y1) {
-    const corners = [
-      this._rayToGrid(x0, y0), this._rayToGrid(x1, y0),
-      this._rayToGrid(x1, y1), this._rayToGrid(x0, y1),
-    ];
-    const pts = corners.filter(Boolean);
-    if (pts.length < 2) return;
+    const first = this._regionPts[0];
+    const gw = this.header.grid_w, gh = this.header.grid_h;
+    const closeDist = Math.max(2, Math.max(gw, gh) * 0.015);
+    const hypot = Math.hypot(hit.col - first.col, hit.row - first.row);
 
-    let minC = Infinity, maxC = -Infinity, minR = Infinity, maxR = -Infinity;
-    for (const p of pts) {
-      if (p.col < minC) minC = p.col;
-      if (p.col > maxC) maxC = p.col;
-      if (p.row < minR) minR = p.row;
-      if (p.row > maxR) maxR = p.row;
+    if (this._regionPts.length >= 3 && hypot <= closeDist) {
+      this._closeRegionPolygon();
+    } else {
+      this._regionPts.push(hit);
+      this._rebuildRegionOverlay();
     }
-    const stats = this._regionStatsFor(minC, minR, maxC, maxR);
+  }
+
+  _rebuildRegionOverlay() {
+    if (!this._regionGroup) return;
+    while (this._regionGroup.children.length) this._regionGroup.remove(this._regionGroup.children[0]);
+    const pts = this._regionPts;
+    if (!pts.length) return;
+
+    const gw = this.header.grid_w;
+    const mk = (cc, rr, color) => {
+      const z = this._heightAt(cc, rr);
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(Math.max(2, gw * 0.003), 12),
+        new THREE.MeshBasicMaterial({ color }),
+      );
+      m.position.set(cc, rr, (Number.isFinite(z) ? z : 0) * this.exag + 30);
+      return m;
+    };
+
+    for (const p of pts) this._regionGroup.add(mk(p.col, p.row, 0xffcc33));
+
+    const world = pts.map((p) => {
+      const z = this._heightAt(p.col, p.row);
+      return new THREE.Vector3(p.col, p.row, (Number.isFinite(z) ? z : 0) * this.exag + 12);
+    });
+    const geo = new THREE.BufferGeometry().setFromPoints(world);
+    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xf59e0b }));
+    this._regionGroup.add(line);
+  }
+
+  _removeLastRegionVertex() {
+    if (!this._regionPts.length) return;
+    this._regionPts.pop();
+    this._rebuildRegionOverlay();
+  }
+
+  _resetRegion() {
+    this._regionPts = [];
+    if (this._regionGroup) {
+      while (this._regionGroup.children.length) this._regionGroup.remove(this._regionGroup.children[0]);
+    }
+  }
+
+  _closeRegionPolygon() {
+    const poly = this._regionPts.slice();
+    if (poly.length < 3) return;
+
+    const closed = poly.concat([poly[0]]);
+    const world = closed.map((p) => {
+      const z = this._heightAt(p.col, p.row);
+      return new THREE.Vector3(p.col, p.row, (Number.isFinite(z) ? z : 0) * this.exag + 12);
+    });
+    while (this._regionGroup.children.length) this._regionGroup.remove(this._regionGroup.children[0]);
+    for (const p of poly) {
+      const z = this._heightAt(p.col, p.row);
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(Math.max(2, this.header.grid_w * 0.003), 12),
+        new THREE.MeshBasicMaterial({ color: 0xffcc33 }),
+      );
+      m.position.set(p.col, p.row, (Number.isFinite(z) ? z : 0) * this.exag + 30);
+      this._regionGroup.add(m);
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(world);
+    this._regionGroup.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xf59e0b })));
+
+    const stats = this._regionStatsForPoly(poly);
+    this._resetRegion();
     if (stats && this.hooks.onRegion) this.hooks.onRegion(stats);
+  }
+
+  _clearRegion() {
+    if (this._regionCleanup) { this._regionCleanup(); this._regionCleanup = null; }
+    this._regionPts = [];
+    if (this._regionGroup && this._regionGroup.parent) {
+      this.scene.remove(this._regionGroup);
+      this._regionGroup = null;
+    }
   }
 
   _rayToGrid(clientX, clientY) {
@@ -279,18 +343,59 @@ export class Viewer {
     };
   }
 
-  /** Summarize heights in grid rect [c0..c1, r0..r1] using the region grid. */
-  _regionStatsFor(c0, r0, c1, r1) {
+  /** Exact (float) grid position of a click, so markers land under the cursor. */
+  _rayToGridExact(clientX, clientY) {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(
+      ((clientX - r.left) / r.width) * 2 - 1,
+      -((clientY - r.top) / r.height) * 2 + 1,
+    );
+    this._ray.setFromCamera(ndc, this.camera);
+    const hits = this._ray.intersectObject(this.mesh);
+    if (!hits.length) return null;
+    const pt = hits[0].point;
+    const { grid_w: gw, grid_h: gh } = this.header;
+    return {
+      col: Math.min(gw - 1, Math.max(0, pt.x)),
+      row: Math.min(gh - 1, Math.max(0, pt.y)),
+    };
+  }
+
+  /** Ray-casting point-in-polygon test in grid space. */
+  _pointInPoly(col, row, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i].col, yi = poly[i].row;
+      const xj = poly[j].col, yj = poly[j].row;
+      const intersects = ((yi > row) !== (yj > row)) &&
+        (col < (xj - xi) * (row - yi) / (yj - yi) + xi);
+      if (intersects) inside = !inside;
+    }
+    return inside;
+  }
+
+  /** Summarize heights inside a grid-space polygon using the region grid. */
+  _regionStatsForPoly(poly) {
     if (!this._regionHeights) return null;
     const gw = this.header.grid_w, gh = this.header.grid_h;
     const rgw = this.regionGridW || gw, rgh = this.regionGridH || gh;
     const scX = (rgw - 1) / (gw - 1 || 1);
     const scY = (rgh - 1) / (gh - 1 || 1);
 
+    let minC = Infinity, maxC = -Infinity, minR = Infinity, maxR = -Infinity;
+    for (const p of poly) {
+      if (p.col < minC) minC = p.col;
+      if (p.col > maxC) maxC = p.col;
+      if (p.row < minR) minR = p.row;
+      if (p.row > maxR) maxR = p.row;
+    }
+    if (minC === Infinity) return null;
+
     const vals = [];
     const structs = [];
-    for (let row = Math.max(0, r0); row <= Math.min(gh - 1, r1); row++) {
-      for (let col = Math.max(0, c0); col <= Math.min(gw - 1, c1); col++) {
+    for (let row = Math.max(0, Math.floor(minR)); row <= Math.min(gh - 1, Math.ceil(maxR)); row++) {
+      for (let col = Math.max(0, Math.floor(minC)); col <= Math.min(gw - 1, Math.ceil(maxC)); col++) {
+        if (!this._pointInPoly(col + 0.5, row + 0.5, poly)) continue;
         const gi = Math.round(row * scY) * rgw + Math.round(col * scX);
         const v = this._regionHeights[gi];
         if (Number.isFinite(v)) vals.push(v);
@@ -305,9 +410,22 @@ export class Viewer {
     const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
     const variance = vals.reduce((a, b) => a + (b - mean) * (b - mean), 0) / vals.length;
 
-    // region centre in original-image pixel coords (for a GCP point)
-    const cc = 0.5 * (Math.max(c0, 0) + Math.min(c1, gw - 1));
-    const rc = 0.5 * (Math.max(r0, 0) + Math.min(r1, gh - 1));
+    // polygon centroid -> original-image pixel coords (for a GCP point)
+    let ax = 0, ay = 0, area = 0;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i].col, yi = poly[i].row;
+      const xj = poly[j].col, yj = poly[j].row;
+      const cross = xi * yj - xj * yi;
+      ax += (xi + xj) * cross;
+      ay += (yi + yj) * cross;
+      area += cross;
+    }
+    area *= 0.5;
+    let cc = poly[0].col, rc = poly[0].row;
+    if (Math.abs(area) > 1e-6) {
+      cc = ax / (6 * area);
+      rc = ay / (6 * area);
+    }
     const ox = (cc / (gw - 1 || 1)) * (this.regionOrigW - 1 || 0);
     const oy = (rc / (gh - 1 || 1)) * (this.regionOrigH - 1 || 0);
 
@@ -512,7 +630,8 @@ export class Viewer {
 
   _heightAt(col, row) {
     const { grid_w: gw, grid_h: gh } = this.header;
-    const pi = row * gw + col;
+    const c = Math.round(col), r = Math.round(row);
+    const pi = r * gw + c;
     const v = this.heights[pi];
     return Number.isFinite(v) ? v : NaN;
   }

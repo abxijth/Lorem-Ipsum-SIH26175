@@ -551,7 +551,7 @@ $('#btn-region').addEventListener('click', () => {
   regionPanel.classList.toggle('hidden', !turningOn);
   if (turningOn) {
     state.viewer?.setRegionMode(true);
-    $('#region-status').textContent = 'Drag a box on the terrain (e.g. a roof).';
+    $('#region-status').textContent = 'Click to add points; click the first point to close the polygon.';
     $('#btn-region-gcp').disabled = true;
   } else {
     state.viewer?.setRegionMode(false);
@@ -578,7 +578,7 @@ function showRegion(stats) {
     .join('');
   $('#btn-region-gcp').disabled = false;
   $('#region-status').textContent =
-    `Region tool active. Click “Use region as GCP” to recalibrate, or drag a new box.`;
+    `Region tool active. Click “Use region as GCP” to recalibrate, or draw a new polygon.`;
 }
 
 $('#btn-region-done').addEventListener('click', () => {

@@ -177,7 +177,7 @@
       <button id="btn-slope" class="tool" title="Slope (degrees)">⤒</button>
       <button id="btn-err" class="tool hidden" title="Error heatmap vs reference">⚠</button>
       <button id="btn-gcp" class="tool" title="GCP calibration: click point, enter known height">＋</button>
-      <button id="btn-region" class="tool" title="Region statistics: drag a box (e.g. a roof)">▭ Region</button>
+      <button id="btn-region" class="tool" title="Pen tool: click points to draw a polygon, then click the first point to close it">✏️ Pen Tool</button>
       <span class="tool-sep"></span>
       <label class="tool-label">exaggeration
         <input type="range" id="xrange" min="1" max="60" value="8" />
@@ -210,7 +210,7 @@
 
     <div id="region-panel" class="gcp-panel region-panel hidden">
       <h3>Region statistics</h3>
-      <p class="muted">Drag a box over the terrain (e.g. a building roof).</p>
+      <p class="muted">Click points on the terrain to draw a polygon, then click the first point to close it.</p>
       <div id="region-stats" class="region-stats"></div>
       <div class="row">
         <label class="known-height">
