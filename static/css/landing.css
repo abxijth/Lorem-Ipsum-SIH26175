@@ -1175,6 +1175,7 @@ h1, h2, h3, h4 {
   .hero-kicker { margin-bottom: 32px; font-size: 12px; padding: 7px 14px; }
   .hero-title { margin-bottom: 32px; }
   .hero-sub { font-size: 19px; margin-top: 24px; }
+  .hero-visual { padding: 0 24px; }
 
   .intro { padding: 88px 0; }
 
